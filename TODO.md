@@ -48,6 +48,22 @@ three data points rather than re-discovering the ALSC counter-example.
 Functionally the device keeps answering Who-Is/ReadProperty correctly despite
 the flood (verified live in this session), matching B-ACC-CPP's own finding.
 
+**Additional side effect observed in CI, not seen by any prior sibling
+task:** the first `windows-2022` CI run on this repository's `main` branch
+failed the smoke-test step with `forked process ... died unexpectedly` /
+`fork: Resource temporarily unavailable` from the Git-Bash (MSYS2) shell,
+immediately after the `ready` line and one `WriteProperty` line were
+correctly captured - i.e. the smoke test's own logic had already succeeded,
+but the flood's very high line rate appears to have exhausted MSYS2's fork
+budget while the polling loop kept re-forking `grep`/`sleep` against a
+rapidly-growing `smoke.log`. `gh run rerun --failed` succeeded immediately
+on retry with an otherwise-identical log (same flood, same volume) - so this
+looks like a resource-pressure flake specific to the Windows runner's
+Git-Bash environment under heavy stdout volume, not a deterministic failure,
+but it is a genuine, CI-observable consequence of #2045 worth flagging: a
+sufficiently chatty flood can intermittently break log-polling CI steps on
+this runner, not just clutter output.
+
 **Filed:** [chipkin/cas-bacnet-stack#2045](https://github.com/chipkin/cas-bacnet-stack/issues/2045)
 (comment added with this repository's data point rather than a new issue).
 
