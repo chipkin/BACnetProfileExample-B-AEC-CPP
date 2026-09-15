@@ -1,0 +1,174 @@
+{
+  "objects": [
+    {
+      "type": "Analog Input",
+      "instance": 1,
+      "name": "Bronze",
+      "app": ["Present_Value", "Object_Name", "Units", "Out_Of_Service"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Event_State"],
+      "note": "REAL, degrees Celsius; starts at 21.5. F-COVM: Present_Value AND Status_Flags are both marked subscribable (SetPropertySubscribable), so a SubscribeCOVPropertyMultiple naming both fires one multi-property notification when the up/down keys nudge this value"
+    },
+    {
+      "type": "Binary Input",
+      "instance": 1,
+      "name": "Emerald",
+      "app": ["Present_Value", "Object_Name", "Polarity", "Out_Of_Service"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Event_State"],
+      "note": "starts inactive"
+    },
+    {
+      "type": "Multi-state Input",
+      "instance": 1,
+      "name": "Hot Pink",
+      "app": ["Present_Value", "Object_Name", "Number_Of_States", "Out_Of_Service", "State_Text"],
+      "enabled": ["State_Text"],
+      "writable": [],
+      "accepted": ["Event_State"],
+      "note": "state 1 of 3: On, Off, Auto"
+    },
+    {
+      "type": "Analog Output",
+      "instance": 1,
+      "name": "Chartreuse",
+      "app": ["Present_Value", "Object_Name", "Units", "Priority_Array", "Relinquish_Default", "Out_Of_Service"],
+      "enabled": ["Priority_Array", "Relinquish_Default"],
+      "writable": ["Present_Value"],
+      "accepted": ["Event_State"],
+      "note": "F-OUTPUTS (NEW vs B-EM; canonical pattern from B-SA-CPP). REAL setpoint, 16-slot Priority_Array + Relinquish_Default (20.0); commandable. Present_Value itself is resolved by the stack from the Priority_Array - this application's Get callback answers the individual array-index reads (and Relinquish_Default) rather than Present_Value directly, exactly as B-SA's canonical pattern documents"
+    },
+    {
+      "type": "Binary Output",
+      "instance": 1,
+      "name": "Fuchsia",
+      "app": ["Present_Value", "Object_Name", "Polarity", "Priority_Array", "Relinquish_Default", "Out_Of_Service"],
+      "enabled": ["Priority_Array", "Relinquish_Default"],
+      "writable": ["Present_Value"],
+      "accepted": ["Event_State"],
+      "note": "F-OUTPUTS (NEW vs B-EM). Active/inactive, commandable; Relinquish_Default inactive (0). Out-of-range writes (anything but 0/1) are rejected with value-out-of-range"
+    },
+    {
+      "type": "Multi-state Output",
+      "instance": 1,
+      "name": "Indigo",
+      "app": ["Present_Value", "Object_Name", "Number_Of_States", "Priority_Array", "Relinquish_Default", "Out_Of_Service"],
+      "enabled": ["Priority_Array", "Relinquish_Default"],
+      "writable": ["Present_Value"],
+      "accepted": ["Event_State"],
+      "note": "F-OUTPUTS (NEW vs B-EM). State 1..3, commandable; Relinquish_Default state 1. Out-of-range writes (state 0 or >3) are rejected with value-out-of-range. Verified by wire test: WriteProperty of state 9 rejected with value-out-of-range"
+    },
+    {
+      "type": "Network Port",
+      "instance": 1,
+      "name": "Vermilion",
+      "app": ["Object_Name", "Out_Of_Service", "Network_Type", "Protocol_Level", "Changes_Pending"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Reliability"],
+      "note": "BACnet/IP; Network_Type and Protocol_Level are set from BACnetStack_AddNetworkPortObject()'s arguments (IPv4, BACnet Application) at start-up, not a GetProperty callback like the object's other app-served rows; Changes_Pending is likewise computed and answered natively by the stack's Network Port object. Reliability has no fault condition this example detects, so it is accepted at the generic default (normal)"
+    },
+    {
+      "type": "Elevator Group",
+      "instance": 1,
+      "name": "Maroon",
+      "app": ["Object_Name"],
+      "enabled": [],
+      "writable": ["Landing_Call_Control"],
+      "accepted": ["Machine_Room_ID", "Group_ID", "Group_Members"],
+      "note": "F-ELEVATOR (canonical, from B-EM). Machine_Room_ID, Group_ID and Group_Members are NOT stack DEFAULTS - they are genuinely stored and served by BACnetStack_AddElevatorGroupObject (Group_Members is also maintained by BACnetStack_AddLiftOrEscalatorObject as Lift 1/Mauve is added to this group). They are marked accepted only because property-profile-reference.md's generic per-type table does not know about this object-specific host-configuration API and so cannot credit them as stack-served. isGroupOfLifts=true and supportLandingCallStatus=true: Group_Mode and LandingCalls are therefore also enabled (see the Lift's note for how the four F-ELEVATOR list/sequence callbacks are exercised) but property-profile-reference.md's generic Elevator Group table does not mark either 'required', so neither generates a checked row here - Group_Mode is served by GetPropertyEnumerated (normal) and LandingCalls by GetListElevatorGroupLandingCallStatus (no calls outstanding) regardless. NEW vs B-EM: Landing_Call_Control is now writable - BACnetStack_RegisterCallbackSetElevatorGroupLandingCallControl is registered (unlike B-EM, which deliberately left it unregistered), so a WriteProperty commanding a landing call is recorded and read back through GetListElevatorGroupLandingCallStatus. Code-reviewed against the stack's doc comment and confirmed to build/register correctly; NOT independently wire-verified with a real client in this session (BACnetLandingCallStatus's write-side SEQUENCE-CHOICE encoding is not cleanly expressible through the available test-client library) - flagged in the PR rather than assumed"
+    },
+    {
+      "type": "Lift",
+      "instance": 1,
+      "name": "Mauve",
+      "app": ["Object_Name", "Car_Position", "Car_Moving_Direction", "Car_Door_Status", "Passenger_Alarm", "Out_Of_Service", "Fault_Signals"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Status_Flags", "Elevator_Group", "Group_ID", "Installation_ID"],
+      "note": "F-ELEVATOR (canonical). property-profile-reference.md's generated Lift table is INCOMPLETE relative to CASBACnetStackDLL.h's own doc comment for BACnetStack_AddLiftOrEscalatorObject (a documentation gap in the stack repo, not a stack API gap): the markdown table omits Car_Position, Car_Moving_Direction, Car_Door_Status, Passenger_Alarm, Out_Of_Service and Fault_Signals entirely, even though the DLL header lists all six as REQUIRED Lift properties. This example serves every one of them regardless, because they are genuinely required by clause 12.59 - Car_Position and Car_Moving_Direction via GetPropertyUnsignedInteger/GetPropertyEnumerated, Car_Door_Status (one door, index 1) via GetPropertyEnumerated with useArrayIndex, Passenger_Alarm and Out_Of_Service via GetPropertyBool, Fault_Signals (empty - no active faults) via the GetListOfEnumerations callback. Status_Flags, Elevator_Group, Group_ID and Installation_ID ARE in the generic table (stack-computed/stack-stored) and are accepted for the same reason as Maroon's. Passenger_Alarm is the AE-N-I-B alarm source: an intrinsic ChangeOfState(bool) algorithm routed to Notification Class 1 (Crimson); it is not writable through any API in this stack (a real installation drives it from hardware), so this example simulates it on a 30-second timer rather than a key or a write - see the file header comment in main.cpp. Optional properties Assigned_Landing_Calls, Registered_Car_Call and Landing_Door_Status are enabled and each exercises one of the four F-ELEVATOR list/sequence callbacks with one demonstration entry"
+    },
+    {
+      "type": "Escalator",
+      "instance": 1,
+      "name": "Mint",
+      "app": ["Object_Name", "Operation_Direction", "Passenger_Alarm", "Out_Of_Service"],
+      "enabled": ["Power_Mode", "Escalator_Mode"],
+      "writable": [],
+      "accepted": ["Status_Flags", "Elevator_Group", "Group_ID", "Installation_ID"],
+      "note": "F-ELEVATOR. Not a member of Maroon (a group of Lifts, isGroupOfLifts=true) - added with the spec's 'no reference' sentinel (4194303) for Elevator_Group, as clause 12.60.6 allows. Required Operation_Direction (no stack default), Passenger_Alarm and Out_Of_Service are served by the app; the optional Power_Mode and Escalator_Mode are enabled and served too, for a fuller demonstration. Status_Flags/Elevator_Group/Group_ID/Installation_ID are stack-stored, same reasoning as Mauve's"
+    },
+    {
+      "type": "Positive Integer Value",
+      "instance": 1,
+      "name": "Turquoise",
+      "app": ["Present_Value", "Object_Name"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Units", "Out_Of_Service"],
+      "note": "not one of the profile's named objects - added explicitly by this application, BEFORE Elevator Group 1 (Maroon), as the object Maroon's Machine_Room_ID references. BACnetStack_AddElevatorGroupObject's own doc comment reads as though the stack creates this object automatically if missing; verified against the running stack, it does not - AddElevatorGroupObject fails outright ('Create the Positive Integer Value object before adding the Elevator Group object') unless the application adds it first. Colour 'Turquoise' per docs/colour-table.md's global positive_integer_value mapping; Present_Value (required, no stack default) is served as an arbitrary plausible room id. Units defaults to no-units (accepted) since a machine-room identifier has none; Out_Of_Service is optional and left at the generic default"
+    },
+    {
+      "type": "Notification Class",
+      "instance": 1,
+      "name": "Crimson",
+      "app": ["Object_Name"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Priority", "Ack_Required", "Recipient_List"],
+      "note": "AE-N-I-B / AE-ACK-B / AE-INFO-B. Priority, Ack_Required and Recipient_List are NOT stack DEFAULTS - they are genuinely populated by BACnetStack_AddNotificationClassObject (Priority, Ack_Required) and BACnetStack_AddRecipientToNotificationClass (Recipient_List) at start-up; marked accepted only because property-profile-reference.md's generic per-type table does not know about this object-specific host-configuration API. Unlike B-AAC (AE-CRL-B), Recipient_List is NOT made writable here - AE-CRL-B is not a required BIBB for this profile"
+    },
+    {
+      "type": "Event Log",
+      "instance": 1,
+      "name": "Beige",
+      "app": ["Object_Name"],
+      "enabled": [],
+      "writable": ["Enable"],
+      "accepted": ["Buffer_Size", "Record_Count", "Total_Record_Count", "Log_Buffer", "Status_Flags", "Object_Identifier", "Object_Type", "Property_List", "Event_State", "Enable"],
+      "note": "AE-EL-I-B (F-EVENTLOG, NEW vs B-EC; this series' canonical pattern is B-ALSC-CPP). Enable/Buffer_Size/Record_Count/Total_Record_Count/Log_Buffer/Status_Flags/Object_Identifier/Object_Type/Property_List are NOT stack defaults in the generic sense - they are genuinely held and served by the stack's own Event Log engine (BACnetStack_AddEventLogObject), answered from stack storage BEFORE this file's Get*/Set* callbacks are ever consulted; marked accepted only because property-profile-reference.md's generic table does not know about this object-specific engine. VERIFIED over the wire with a live bacpypes3 client against THIS repository's own build: Object_Name (undefined, the stack's generic non-Device default - no callback serves it), Record_Count and Total_Record_Count (both 0) all read correctly. VERIFIED DEFECT, independently reproduced in this repository (chipkin/cas-bacnet-stack#2045, first found by B-ACC-CPP): adding this object alone causes a continuous, non-fatal 'Failed to set the date'/'Failed to set the time' internal log flood starting from the very first BACnetStack_Tick() - 200 occurrences of each line observed in a 5-second smoke test window. NOTE: B-ALSC-CPP's own task (same object, same BACnetStack_AddEventLogObject call, same stack pin) did NOT observe this flood and its TODO.md/objects.json make no mention of it - the two repositories' object combinations differ (this one also adds Schedule/Calendar/File/Backup-Restore/DM-OCD-B), so the trigger is not 'AddEventLogObject alone' as B-ACC's bisection concluded; it reproduces in at least one combination the same as B-ACC's (Event Log + Schedule/Calendar + File/Backup-Restore) and did not reproduce in B-ALSC's narrower one (Event Log + Schedule/Calendar, no File/Backup-Restore). Flagged in TODO.md with this comparison rather than re-asserting B-ACC's isolation claim unverified. The device otherwise keeps answering Who-Is/ReadProperty correctly throughout the flood (wire-verified)"
+    },
+    {
+      "type": "Schedule",
+      "instance": 1,
+      "name": "Saffron",
+      "app": ["Object_Name", "Reliability", "Out_Of_Service"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Present_Value", "Effective_Period", "Priority_For_Writing"],
+      "note": "SCHED-I-B (F-SCHED-I, NEW vs B-EC; canonical pattern from B-AAC-CPP, copied via B-ALSC-CPP's more recent template). Present_Value, Effective_Period, Schedule_Default, List_Of_Object_Property_References, Priority_For_Writing and Status_Flags are NOT stack defaults - they are genuinely held and served by the stack's Schedule engine (BACnetStack_AddScheduleObject plus the BACnetStack_SetSchedule*/AddSchedule* configuration calls in main.cpp); it writes Analog Output 1 (Chartreuse) Present_Value at priority 8. One weekly transition (Monday 08:00) and one calendar-date exception (2026-12-25, inline calendar-entry form) are seeded at start-up. VERIFIED over the wire with a live bacpypes3 client: Object_Name (undefined) and Priority_For_Writing (8) both read back correctly"
+    },
+    {
+      "type": "Calendar",
+      "instance": 1,
+      "name": "Cream",
+      "app": ["Object_Name", "Present_Value"],
+      "enabled": [],
+      "writable": [],
+      "accepted": ["Date_List"],
+      "note": "Exists for SCHED-I-B completeness alongside Saffron's exception, but its Date_List cannot be populated through the customer API (cas-bacnet-stack issue #963 - no read path for a Calendar object's Date_List; the only generic constructed-property callback is test-tool-only, same gap B-AAC/B-ALSC/B-ACC all document). Present_Value therefore always answers false rather than evaluating a Date_List that is never populated. VERIFIED over the wire: Present_Value read back as false (0)"
+    },
+    {
+      "type": "File",
+      "instance": 1,
+      "name": "Ivory",
+      "app": ["Object_Name", "File_Type", "File_Size", "Modification_Date", "Archive", "Read_Only"],
+      "enabled": [],
+      "writable": ["Archive"],
+      "accepted": ["Event_State"],
+      "note": "DM-BR-B (F-BACKUP, NEW vs B-EC; canonical pattern from B-ACC-CPP) backup/restore payload carrier - stream access, in-memory 4KB buffer via BACnetStack_RegisterCallbackReadFile/WriteFile. File_Type/File_Size/Modification_Date/Archive/Read_Only all have NO stack default per property-profile-reference.md and are all served here. VERIFIED over the wire: File_Size read back as 0 (empty file) - this repository's own build did NOT reproduce B-ACC-CPP's documented File_Size read-access-denied finding (TODO.md #5 / issue #2046); see TODO.md for the comparison. AtomicReadFile/AtomicWriteFile round-trip and the restore half of the backup/restore cycle were NOT exercised over the wire this session (carrying forward B-ACC's documented, unresolved gap there rather than re-testing it) - see TODO.md"
+    },
+    {
+      "type": "Analog Value",
+      "instance": 2,
+      "name": "(created at runtime via DM-OCD-B; not present at start-up)",
+      "app": ["Present_Value"],
+      "enabled": [],
+      "writable": ["Present_Value"],
+      "accepted": ["Object_Name", "Units", "Out_Of_Service", "Event_State", "Status_Flags"],
+      "note": "DM-OCD-B (F-OCD, NEW vs B-EC and the headline addition of this repository - canonical for the whole series). Analog Value is the ONLY creatable object type (BACnetStack_SetObjectTypeCreatable); no Analog Value instance exists until a client creates one with CreateObject. This row documents instance 2 - the object created and verified in this session's live wire test, then deleted - not a base object present at start-up (it does not appear in the base Object_List). Present_Value is served entirely by this file's g_createdAnalogValues table (no stack default for a non-commandable Analog Value's Present_Value) and made writable at the object-TYPE level (BACnetStack_SetPropertyByObjectTypeWritable, since there is no per-instance object to configure before one is created). Object_Name/Units/Out_Of_Service/Event_State/Status_Flags are accepted at their generic stack defaults (Object_Name reads 'undefined', Units 'no-units') - this example does not attempt to let a client name or configure a newly-created object beyond Present_Value. VERIFIED over the wire with a live bacpypes3 client against this repository's own build: CreateObject(analog-value, 2) accepted (CreateObjectACK); the object then appears in Object_List; ReadProperty of Present_Value (0.0) and Object_Name (undefined) both succeed; WriteProperty of Present_Value to 42.5 accepted and reads back correctly; DeleteObject(analog-value, 2) accepted (SimpleACK); a subsequent ReadProperty of the deleted instance correctly answers Error(object: unknown-object); CreateObject(binary-input, 5) - a non-creatable type - is correctly rejected with a CreateObjectError, never reaching this file's CreateObject callback in a way that allocates anything"
+    }
+  ]
+}
