@@ -97,7 +97,7 @@ All notable changes to this project are documented in this file.
 - Every BIBB this profile requires is implemented against the pinned stack -
   including DM-OCD-B, the headline requirement, which is fully implemented
   and wire-verified (see README "Verify" and `docs/objects.json`).
-- **Verified over the wire with a live `bacpypes3` client against this
+- **Verified over the wire with a live BACnet client against this
   repository's own build**: DM-OCD-B's full CreateObject/WriteProperty/
   DeleteObject/rejection cycle; Event Log's `Object_Name`/`Record_Count`/
   `Total_Record_Count`; Schedule's `Priority_For_Writing`; Calendar's
