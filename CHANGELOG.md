@@ -2,6 +2,46 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Restructured the documentation to match the series pattern set by
+  `BACnetProfileExample-B-SS-CPP`: `README.md` is cut down to this example
+  only (series framing, the generic profile explanation, the "What the
+  profile requires" prose, "Before you ship", "Get the code", "Link mode",
+  "Troubleshooting", "Extending the example", the "Objects and properties"
+  table, and the CC0 paragraph all moved out or removed); the long-form
+  material moved to a new `TUTORIAL.md` (extending the example, what each
+  object type needs served, the DM-OCD-B CreateObject/DeleteObject cycle
+  traced end to end, Reviewing your device, Troubleshooting - carrying every
+  silent-failure and conformance warning over precisely, including the Event
+  Log flood and File_Size discrepancy notes); a new `docs/PICS.md` (ANSI/ASHRAE
+  135 Annex A shape) replaces the README's inline objects-and-properties block.
+- `docs/objects.json` gained a `Device` entry (previously omitted from the
+  generated tables); `docs/PICS.md`'s objects-and-properties block was
+  regenerated from it with `tools/gen-objects-properties.py` - 0 rows flagged
+  `⚠`.
+- **Build switched from a prebuilt STATIC library to the adapter's default
+  SOURCE mode**, matching the rest of the series: `cmake -B build -S .` /
+  `cmake --build build --config Release`, no `tools/build-stack-static.sh`
+  step and no `-DCAS_BACNET_STACK_LINK=STATIC` flag. `CMakeLists.txt`'s header
+  comment, `AGENTS.md`'s build section, and `.github/workflows/release.yml`
+  (dropped the static-library cache/build steps and the matrix `lib:` entries,
+  configure with no link-mode flag, the link-mode assertion now checks
+  `SOURCE`, `metrics-*.json` now records `"link_mode": "SOURCE"`, and the
+  packaged release artifact now includes `TUTORIAL.md` and `docs/PICS.md`)
+  were all updated to match. The v1.0.0 footprint numbers in `README.md` were
+  measured from the old STATIC build; the table is kept with a note that the
+  next release refreshes them under the SOURCE build documented here.
+- `main.cpp`'s `CHANGE ALL OF THIS BEFORE YOU SHIP` block now carries a
+  per-field comment for every constant, including the `DEVICE_NAME` uniqueness
+  warning (must be unique across the BACnet internetwork; a real product needs
+  it per-unit configurable, not compile-time) that previously lived only in
+  the README's "Before you ship" table.
+- The series `PROFILE-TABLE` block in `README.md` re-synced with
+  `tools/sync-profile-table.sh BACnetProfileExample-B-AEC-CPP`.
+
 ## [1.0.0] - 2026-09-15
 
 ### Added
