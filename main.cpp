@@ -66,7 +66,7 @@
 // Each object has a colour name (the convention shared across this example
 // series):
 //
-//     Device 389013              "Rainbow"      (instance configurable with --deviceID)
+//     Device 389014              "Rainbow"      (instance configurable with --deviceID)
 //     Analog Input  1            "Bronze"       (REAL, degrees Celsius; read-only)
 //     Binary Input  1            "Emerald"      (active / inactive; read-only)
 //     Multi-State Input 1        "Hot Pink"     (state 1..3; read-only)
@@ -158,25 +158,34 @@ static uint32_t g_deviceInstance = 389014;
 // by ASHRAE - request one (free) at https://bacnet.org/assigned-vendor-ids/.
 // Update VENDOR_NAME below to match.
 static const uint32_t VENDOR_IDENTIFIER = 389;
+
+// This device's Object_Name. CHANGE THIS: Object_Name MUST BE UNIQUE ACROSS THE
+// BACNET INTERNETWORK - two devices answering with the same Object_Name is a
+// spec violation, and nothing on the wire flags it as an error (see TUTORIAL.md's
+// silent-failure table). Here it is a compile-time constant, which is fine for a
+// single tutorial instance; a real product must make it per-unit configurable -
+// from a serial number, DIP switches, a config file, or a `--deviceName`
+// command-line argument - not hard-coded the way this example does it.
 static const char* DEVICE_NAME = "Rainbow";
 static const char* DEVICE_DESCRIPTION =
     "Chipkin CAS BACnet Stack example - B-AEC (Advanced Elevator Controller) profile. "
     "DS-RP/RPM/WP/WPM-B, DS-COV-B, DS-COVM-B, intrinsic alarming "
     "(AE-N-I-B / AE-ACK-B / AE-INFO-B), AE-EL-I-B (Event Log), SCHED-I-B (Schedule), "
     "DM-DDB-A, DM-DCC-B, DM-TS-B, DM-RD-B, DM-OCD-B (CreateObject/DeleteObject), "
-    "DM-BR-B (Backup/Restore). Commands three outputs and the Elevator Group's landing calls.";
+    "DM-BR-B (Backup/Restore). Commands three outputs and the Elevator Group's landing calls."; // CHANGE THIS: what YOUR device actually is.
 
 // Device identity strings (read by clients, and used to populate I-Am).
-static const char* VENDOR_NAME = "Chipkin Automation Systems";
-static const char* MODEL_NAME = "CAS BACnet Stack Example - B-AEC";
+static const char* VENDOR_NAME = "Chipkin Automation Systems"; // CHANGE THIS: must match VENDOR_IDENTIFIER above.
+static const char* MODEL_NAME = "CAS BACnet Stack Example - B-AEC"; // CHANGE THIS: your model designation - what a building operator reads to identify your device.
 
 // DeviceCommunicationControl password. A management station may include a password
 // with a DeviceCommunicationControl request; the device accepts the command only if
 // it matches. Set to NULL/empty to accept any request (no password required).
-// Change this to your device's secret before shipping.
+// Change this to your device's secret before shipping. It crosses the wire in
+// PLAINTEXT - a guard against accidents, not a security boundary.
 static const char* DCC_PASSWORD = "";  // "" = no password required
-static const char* FIRMWARE_REVISION = "1.0.0";
-static const char* APPLICATION_SOFTWARE_VERSION = "1.0.0";
+static const char* FIRMWARE_REVISION = "1.0.0"; // CHANGE THIS: your real firmware version - wire it to your build.
+static const char* APPLICATION_SOFTWARE_VERSION = "1.0.0"; // CHANGE THIS: your real application software version - wire it to your build.
 
 // The base sensor objects (all instance 1) and their colour names. Every example
 // in the series carries these three plus the Network Port - see docs/colour-table.md.
