@@ -378,10 +378,6 @@ static const uint32_t PROPERTY_IDENTIFIER_PASSENGER_ALARM = 478;
 static const uint32_t PROPERTY_IDENTIFIER_POWER_MODE = 479;
 static const uint32_t PROPERTY_IDENTIFIER_REGISTERED_CAR_CALL = 480;
 
-// -- F-TIMESYNC: Local_Date / Local_Time property identifiers (Device object) --
-static const uint32_t PROPERTY_IDENTIFIER_LOCAL_DATE = 56;
-static const uint32_t PROPERTY_IDENTIFIER_LOCAL_TIME = 57;
-
 // BACnetLiftCarDirectionEnum (BACnetLiftCarDirection.h)
 static const uint32_t LIFT_CAR_DIRECTION_UP = 3;
 // BACnetDoorStatusEnum (BACnetDoorStatus.h) - shared with Access Door / the Lift's
