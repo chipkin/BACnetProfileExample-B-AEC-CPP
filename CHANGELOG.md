@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.2] - unreleased
+
+### Changed
+
+- **Device renamed from the series' colour placeholder "Rainbow" to "Chipkin
+  Example B-AEC"** so devices from different examples in the series are
+  distinguishable from each other on the same BACnet network - every example
+  previously announced the identical Object_Name "Rainbow", which made two
+  examples on one subnet indistinguishable by name. Sub-object names (Analog
+  Input 1 "Bronze", etc.) are unchanged - only the Device object's name
+  changed. `docs/colour-table.md` (series root) updated to match. APP_VERSION
+  bumped 1.0.1 -> 1.0.2.
+
 ## [Unreleased]
 
 ### Fixed

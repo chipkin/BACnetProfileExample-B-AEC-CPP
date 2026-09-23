@@ -66,7 +66,7 @@
 // Each object has a colour name (the convention shared across this example
 // series):
 //
-//     Device 389014              "Rainbow"      (instance configurable with --deviceID)
+//     Device 389014              "Chipkin Example B-AEC"      (instance configurable with --deviceID)
 //     Analog Input  1            "Bronze"       (REAL, degrees Celsius; read-only)
 //     Binary Input  1            "Emerald"      (active / inactive; read-only)
 //     Multi-State Input 1        "Hot Pink"     (state 1..3; read-only)
@@ -140,7 +140,7 @@ using namespace CASBACnetStackExampleConstants;
 // 1. Example + device configuration
 // -----------------------------------------------------------------------------
 static const char* APP_NAME = "BACnet B-AEC (Advanced Elevator Controller) Example - C++";
-static const char* APP_VERSION = "1.0.1";
+static const char* APP_VERSION = "1.0.2";
 
 // The device instance. BACnet requires this to be configurable, so it defaults
 // to 389014 and can be overridden on the command line with --deviceID.
@@ -167,7 +167,7 @@ static const uint32_t VENDOR_IDENTIFIER = 389;
 // single tutorial instance; a real product must make it per-unit configurable -
 // from a serial number, DIP switches, a config file, or a `--deviceName`
 // command-line argument - not hard-coded the way this example does it.
-static const char* DEVICE_NAME = "Rainbow";
+static const char* DEVICE_NAME = "Chipkin Example B-AEC";
 static const char* DEVICE_DESCRIPTION =
     "Chipkin CAS BACnet Stack example - B-AEC (Advanced Elevator Controller) profile. "
     "DS-RP/RPM/WP/WPM-B, DS-COV-B, DS-COVM-B, intrinsic alarming "

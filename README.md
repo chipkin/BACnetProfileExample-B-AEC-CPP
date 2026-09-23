@@ -84,7 +84,7 @@ elevator object family inherited from B-EM/B-EC.
 
 | Object type | Instance | Name |
 |-------------|:--------:|------|
-| Device | 389014 | Rainbow |
+| Device | 389014 | Chipkin Example B-AEC |
 | Analog Input | 1 | Bronze |
 | Binary Input | 1 | Emerald |
 | Multi-State Input | 1 | Hot Pink |
@@ -109,7 +109,7 @@ Every required property of every object, and who answers it, is in
 ## The device this example creates
 
 ```
-Device 389014  "Rainbow"   (Vendor 389 - Chipkin Automation Systems)
+Device 389014  "Chipkin Example B-AEC"   (Vendor 389 - Chipkin Automation Systems)
     ├── Analog Input  1            "Bronze"      read-only sensor (REAL, deg C); F-COVM demo (COV on 2 properties)
     ├── Binary Input  1            "Emerald"     read-only sensor (active/inactive)
     ├── Multi-State Input 1        "Hot Pink"    read-only sensor (state 1..3)
@@ -216,7 +216,7 @@ CAS BACnet Stack version: 6.0.21.0
 Common helper (common/) version: 2.5.0
 FYI: Listening for BACnet/IP on UDP port 47808 (Network Port 1).
 TX 21 bytes to 192.168.3.255:47808 (broadcast) (Network Port 1)
-FYI: Device 389014 ("Rainbow") ready. Vendor ID 389. Accepts WriteProperty to Chartreuse/Fuchsia/Indigo and Landing_Call_Control on Maroon. Press 'd' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.
+FYI: Device 389014 ("Chipkin Example B-AEC") ready. Vendor ID 389. Accepts WriteProperty to Chartreuse/Fuchsia/Indigo and Landing_Call_Control on Maroon. Press 'd' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.
 ```
 
 The `TX` line is the start-up I-Am the device broadcasts to announce itself. It
