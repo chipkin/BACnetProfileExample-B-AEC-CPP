@@ -2,7 +2,37 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.2] - unreleased
+
+### Changed
+
+- **Device renamed from the series' colour placeholder "Rainbow" to "Chipkin
+  Example B-AEC"** so devices from different examples in the series are
+  distinguishable from each other on the same BACnet network - every example
+  previously announced the identical Object_Name "Rainbow", which made two
+  examples on one subnet indistinguishable by name. Sub-object names (Analog
+  Input 1 "Bronze", etc.) are unchanged - only the Device object's name
+  changed. `docs/colour-table.md` (series root) updated to match. APP_VERSION
+  bumped 1.0.1 -> 1.0.2.
+
 ## [Unreleased]
+
+### Fixed
+
+- **`Application_Software_Version` (12) and `Firmware_Revision` (44) were
+  hardcoded and stale** - the same bug found and fixed in the sibling
+  BACnetProfileExample-B-SCHUB-CPP example via a real device read (BACnet
+  Explorer): `Application_Software_Version` reported a hardcoded `"1.0.0"`
+  regardless of the actual build, and `Firmware_Revision` was the same stale
+  `"1.0.0"` constant - it was never meant to be this example's own version at
+  all, it names the underlying platform. Fixed: `Application_Software_Version`
+  now reads `APP_VERSION` directly (one source of truth, can't drift from
+  `--version`'s own banner again). `Firmware_Revision` is now built at
+  runtime from the CAS BACnet Stack's own `BACnetStack_GetAPIMajorVersion()`/
+  `GetAPIMinorVersion()`/`GetAPIPatchVersion()`/`GetAPIBuildVersion()` (the
+  same 4 calls `common/CASExampleHelper.cpp`'s `PrintVersion()` already uses
+  for the startup banner), populated once right after `LoadBACnetFunctions()`
+  succeeds. APP_VERSION bumped 1.0.0 -> 1.0.1.
 
 ### Changed
 

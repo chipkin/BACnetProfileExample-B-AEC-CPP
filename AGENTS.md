@@ -75,7 +75,7 @@ over the wire (no interactive key commands either - use a BACnet client).
 
 ## Conventions
 
-- Device is named "Rainbow"; objects use the series' colour names; vendor id 389.
+- Device is named "Chipkin Example B-AEC"; objects use the series' colour names; vendor id 389.
 - **F-OUTPUTS is the canonical pattern from `BACnetProfileExample-B-SA-CPP`,
   copied verbatim** - the `Commandable` struct, `CommandWrite`/`CommandRelinquish`,
   `ReadPrioritySlot`, `GetCommandable`, `BACNET_PRIORITY_ARRAY_SIZE`, and the
