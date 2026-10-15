@@ -105,7 +105,7 @@ infer it:
 | Notification Class | `Object_Name` | Priority/Ack_Required/Recipient_List are stack-held |
 | Event Log | `Object_Name` | everything else is stack-held by the Event Log engine |
 | Schedule | `Object_Name`, `Reliability`, `Out_Of_Service` | everything else is stack-held by the Schedule engine |
-| Calendar | `Object_Name`, `Present_Value` | `Date_List` cannot be populated - see below |
+| Calendar | `Object_Name`, `Present_Value` | this example's `AddObject` Calendar has an empty `Date_List`; `BACnetStack_AddCalendarObject` (stack-held) is the better choice now - see `TODO.md` |
 | File | `Object_Name`, `File_Type`, `File_Size`, `Modification_Date`, `Archive`, `Read_Only` | — |
 | Analog Value *(created via DM-OCD-B)* | `Present_Value` | everything else accepted at the stack default |
 
@@ -138,7 +138,9 @@ rather than against "it looked fine in the explorer":
    (see [Keeping the PICS honest](#keeping-the-pics-honest) below). A ⚠ row is a
    required property nothing serves.
 2. Read **every** property listed for **every** object with a BACnet client, and
-   compare the value against the PICS. `"undefined"`, `no-units` and a datatype
+   compare the value against the PICS. `tests/run_wire_tests.py` reads them all
+   and fails on any that does not return a value (README "Wire Tests") - keep it
+   passing, then check the values yourself. `"undefined"`, `no-units` and a datatype
    zero are the three shapes a missed callback takes.
 3. Diff a new or extended object against a working object of the same type.
    Anything that differs and shouldn't is a callback that matched on instance.
@@ -177,8 +179,7 @@ not in `accepted`, comes out as a ⚠ row - that is a defect, not a feature.
 
 | Symptom | Cause / fix |
 |---------|-------------|
-| On start-up the app prints a wall of red `Error:` lines but the device works | **Expected - this is not your bug**, and on THIS device it is louder than most siblings. Two ordinary sources are shared with every example: (1) the device receives its **own** broadcast I-Am and logs a decode cascade; (2) a one-time *"UUID has not been set..."* BACnet/SC notice. On top of those, adding Event Log 1 ("Beige") reproduces a **known, independently confirmed stack defect** ([chipkin/cas-bacnet-stack#2045](https://github.com/chipkin/cas-bacnet-stack/issues/2045)): a continuous, non-fatal `Failed to set the date` / `Failed to set the time` flood starting from the very first `BACnetStack_Tick()` - 200 occurrences of each line were observed in a 5-second smoke-test window in this repository's own verification. The device keeps answering Who-Is and ReadProperty correctly throughout it. **This is not the same finding as B-ACC-CPP's isolated "AddEventLogObject alone" bisection** - see `TODO.md` #1 for the full object-combination comparison across this repository, B-ACC-CPP and B-ALSC-CPP; the flood's high line volume has also been observed to intermittently break the Windows CI runner's Git-Bash log-polling step (`TODO.md` #1, "Additional side effect observed in CI"). |
-| `ReadProperty(File,1,File_Size)` fails with `read-access-denied` | **Not reproduced in this repository.** B-ACC-CPP documented this as part of [#2046](https://github.com/chipkin/cas-bacnet-stack/issues/2046); this repository's own build reads `File_Size` back correctly (0, empty file) despite an otherwise-identical File/Backup-Restore setup. If you hit the denial here, it did not reproduce in this repository's own verification session, so treat it as new information for #2046 rather than an already-understood repeat - see `TODO.md` #2. |
+| On start-up the app prints a few red `Error:` lines but the device works | **Expected - this is not your bug.** Two sources are shared with every example: (1) the device receives its **own** broadcast I-Am and logs a decode cascade; (2) a one-time *"UUID has not been set..."* BACnet/SC notice. (Earlier versions also warned of a continuous Event Log `Failed to set the date/time` flood - stack #2045, fixed at this pin.) |
 | CMake error: *"CAS BACnet Stack adapter not found under: ..."* | Submodules not initialized. Run `git submodule update --init --recursive` (or pass `-D CAS_STACK_DIR=...`). |
 | `CASBACnetStackDLL.h: No such file or directory` | Same - submodules not checked out. |
 | Windows: *"No CMAKE_CXX_COMPILER could be found"* | Install Visual Studio with the "Desktop development with C++" workload, then re-run from a fresh terminal. |
@@ -187,4 +188,5 @@ not in `accepted`, comes out as a ⚠ row - that is a defect, not a feature.
 | Client sends Who-Is but sees no I-Am | Firewall is blocking UDP 47808, or the client and device are on different subnets (Who-Is is a broadcast). Allow the port; test on the same subnet first. |
 | `CreateObject` of anything other than `analog-value` is rejected | Correct - Analog Value is the only object type this example marks creatable (DM-OCD-B, F-OCD). Not a bug. |
 | A created Analog Value's `Object_Name` reads back `"undefined"` | Correct - deliberately left at the stack's generic default; see `docs/objects.json`'s Analog Value entry and the CreateObject/DeleteObject table above. Not a bug. |
-| WriteProperty of `Landing_Call_Control` | This write path is registered and code-reviewed, but was **not** independently wire-verified with a live client in this repository's own session (`BACnetLandingCallStatus`'s write-side SEQUENCE-CHOICE encoding was not cleanly expressible through the available test-client library) - see `TODO.md` #4. Confirm it yourself if you touch this code. |
+| WriteProperty of `Landing_Call_Control` | Before any write it reads floor 0, direction `none`. A raw-encoded write (`09 07 19 03`, floor 7 up) is acknowledged and reads back unchanged - checked by hand on 2026-10-15, not yet a Wire Test. The car does not move. |
+| The Event Log's `Record_Count` stays 0 | `Enable` starts FALSE and the stack has no call to start it TRUE: write `Enable` TRUE from a client first (`TODO.md`). |

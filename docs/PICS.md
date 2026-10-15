@@ -18,16 +18,18 @@ see [README.md](../README.md).
 | **Vendor Identifier** | 389 |
 | **Product Name** | CAS BACnet Stack Example - B-AEC |
 | **Product Model Number** | CAS BACnet Stack Example - B-AEC |
-| **Application Software Version** | 1.0.0 |
-| **Firmware Revision** | 1.0.0 |
+| **Application Software Version** | 1.1.0 |
+| **Firmware Revision** | 6.0.23.0 (the CAS BACnet Stack version) |
 | **BACnet Protocol Version** | 1 |
-| **BACnet Protocol Revision** | 24 |
+| **BACnet Protocol Revision** | 30 |
 
 **Product Description:** a BACnet/IP elevator-installation controller built on
 the CAS BACnet Stack. It reports what an elevator installation is doing
-(car position, doors, alarms) and accepts commands (three commandable outputs,
-the Elevator Group's landing calls), generates intrinsic alarm notifications,
-captures an Event Log, drives an output from a Schedule, can be backed up and
+(car position, doors, alarms - position, doors and direction are fixed values in
+this example) and accepts commands (three commandable outputs, the Elevator
+Group's landing calls - recorded, not acted on), generates intrinsic alarm
+notifications, keeps an Event Log (once a client writes its `Enable` TRUE),
+drives an output from a Schedule, can be backed up and
 restored, and lets a management station create and delete an Analog Value
 object at runtime (CreateObject/DeleteObject). It is a tutorial for
 implementers of the B-AEC profile, and this repository's canonical example for
@@ -39,8 +41,8 @@ DM-OCD-B / F-OCD.
 
 This device claims exactly one profile. Because the B-AEC requirements are a
 superset of B-EC's, which are in turn a superset of B-EM's and B-GENERAL's, a
-conformant B-AEC device also satisfies **B-EC** and **B-EM** (Annex L.14 /
-L.13) and **B-GENERAL** (Annex L.8); that is subsumption, not additional
+conformant B-AEC device also satisfies **B-EC** and **B-EM** (Annex L.13.2 /
+L.13.3) and **B-GENERAL** (Annex L.8); that is subsumption, not additional
 claims.
 
 ## 3. BIBBs supported (Annex K)
@@ -56,7 +58,7 @@ claims.
 | AE-N-I-B | Alarm and Event - Notification Internal - B |
 | AE-ACK-B | Alarm and Event - ACK - B |
 | AE-INFO-B | Alarm and Event - Information - B |
-| AE-EL-I-B | Alarm and Event - Enrollment Log - Internal - B |
+| AE-EL-I-B | Alarm and Event - Event Log - Internal - B |
 | SCHED-I-B | Scheduling - Internal - B |
 | DM-DDB-A | Device Management - Dynamic Device Binding - A |
 | DM-DDB-B | Device Management - Dynamic Device Binding - B |
@@ -89,6 +91,7 @@ DM-UTC-B (it uses local-time TimeSynchronization, not UTC), any Access-Control
 | DeleteObject | no | **yes** |
 | AtomicReadFile | no | **yes** |
 | AtomicWriteFile | no | **yes** |
+| ReadRange | no | **yes** |
 | DeviceCommunicationControl | no | **yes** |
 | ReinitializeDevice | no | **yes** |
 | TimeSynchronization | no | **yes** |
@@ -104,9 +107,16 @@ subnet at start-up, as well as in response to Who-Is.
 
 ## 5. Segmentation capability
 
-Segmentation is **not supported** in either direction
-(`Segmentation_Supported` = `no-segmentation`). `Max_APDU_Length_Accepted` is
-1476 octets, the BACnet/IP maximum.
+Segmentation is **supported in both directions**
+(`Segmentation_Supported` = `segmented-both`), by the stack: at `6.x` @
+`64b2cfac5` the customer build compiles `STACK_OPTION_SEGMENTATION` in (stack
+#2992), and this example keeps the stack's defaults - `Max_Segments_Accepted`
+16 and `APDU_Segment_Timeout` 5000 ms. Table 12-13 footnote 1: "These
+properties are required if, and shall be present only if, segmentation of any
+kind is supported" - they are not rows in section 11 because its generator
+lists only unconditionally required properties. `Max_APDU_Length_Accepted` is
+1476 octets, the BACnet/IP maximum. (At the previous pin, `abd4cee1`, this
+example answered `no-segmentation`.)
 
 ## 6. Standard object types supported
 
@@ -133,7 +143,7 @@ writable; every other property of every object is read-only.
 | Escalator | 1 | Mint | Power_Mode, Escalator_Mode |
 | Positive Integer Value | 1 | Turquoise | - |
 | Notification Class | 1 | Crimson | - |
-| Event Log | 1 | Beige | `Enable` writable |
+| Event Log | 1 | Beige | `Enable` writable (starts FALSE); `Total_Record_Count` missing at this pin - stack defect, see TODO.md |
 | Schedule | 1 | Saffron | - |
 | Calendar | 1 | Cream | - |
 | File | 1 | Ivory | `Archive` writable |
@@ -149,6 +159,12 @@ time with `--port`.
 
 BBMD is not supported, Foreign Device registration is not supported, and
 BACnet/SC, MS/TP, Ethernet (Annex H) and PTP are not supported.
+
+The stack's Network Port object still lists its BACnet/IP properties in
+`Property_List` - including `IP_DNS_Server`, `FD_BBMD_Address` and
+`FD_Subscription_Lifetime` - and every one of them reads as a value
+(`FD_BBMD_Address` is a Null host, port 0: no BBMD configured). The Wire Tests
+read every listed property of every object.
 
 ## 8. Device address binding
 
@@ -191,7 +207,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Protocol_Object_Types_Supported | BACnetObjectTypesSupported | stack | no |
 | Object_List | BACnetARRAY[N] of BACnetObjectIdentifier | stack | no |
 | Max_APDU_Length_Accepted | Unsigned | stack default, accepted (`CAS_BACNET_DEVICE_DEFAULT_MAX_APDU_LENGTH_ACCEPTED`) | no |
-| Segmentation_Supported | BACnetSegmentation | stack default, accepted (`BACnetSegmentation::noSegmentation`) | no |
+| Segmentation_Supported | BACnetSegmentation | stack default, accepted (`BACnetSegmentation::segmentedBoth` with `STACK_OPTION_SEGME) | no |
 | APDU_Timeout | Unsigned | stack default, accepted (`CAS_BACNET_DEVICE_DEFAULT_APDU_TIMEOUT`) | no |
 | Number_Of_APDU_Retries | Unsigned | stack default, accepted (`CAS_BACNET_DEVICE_DEFAULT_NUMBER_OF_APDU_RETRIES`) | no |
 | Device_Address_Binding | BACnetLIST of BACnetAddressBinding | stack | no |
@@ -307,7 +323,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Changes_Pending | Boolean | app | no |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### Elevator Group 1 "Maroon" - F-ELEVATOR (canonical, from B-EM). Machine_Room_ID, Group_ID and Group_Members are NOT stack DEFAULTS - they are genuinely stored and served by BACnetStack_AddElevatorGroupObject (Group_Members is also maintained by BACnetStack_AddLiftOrEscalatorObject as Lift 1/Mauve is added to this group). They are marked accepted only because property-profile-reference.md's generic per-type table does not know about this object-specific host-configuration API and so cannot credit them as stack-served. isGroupOfLifts=true and supportLandingCallStatus=true: Group_Mode and LandingCalls are therefore also enabled (see the Lift's note for how the four F-ELEVATOR list/sequence callbacks are exercised) but property-profile-reference.md's generic Elevator Group table does not mark either 'required', so neither generates a checked row here - Group_Mode is served by GetPropertyEnumerated (normal) and LandingCalls by GetListElevatorGroupLandingCallStatus (no calls outstanding) regardless. NEW vs B-EM: Landing_Call_Control is now writable - BACnetStack_RegisterCallbackSetElevatorGroupLandingCallControl is registered (unlike B-EM, which deliberately left it unregistered), so a WriteProperty commanding a landing call is recorded and read back through GetListElevatorGroupLandingCallStatus. Code-reviewed against the stack's doc comment and confirmed to build/register correctly; NOT independently wire-verified with a real client in this session (BACnetLandingCallStatus's write-side SEQUENCE-CHOICE encoding is not cleanly expressible through the available test-client library) - flagged in the PR rather than assumed
+### Elevator Group 1 "Maroon" - F-ELEVATOR (canonical, from B-EM). Machine_Room_ID, Group_ID and Group_Members are NOT stack DEFAULTS - they are genuinely stored and served by BACnetStack_AddElevatorGroupObject (Group_Members is also maintained by BACnetStack_AddLiftOrEscalatorObject as Lift 1/Mauve is added to this group). They are marked accepted only because property-profile-reference.md's generic per-type table does not know about this object-specific host-configuration API and so cannot credit them as stack-served. isGroupOfLifts=true and supportLandingCallStatus=true: Group_Mode and LandingCalls are therefore also enabled (see the Lift's note for how the four F-ELEVATOR list/sequence callbacks are exercised) but property-profile-reference.md's generic Elevator Group table does not mark either 'required', so neither generates a checked row here - Group_Mode is served by GetPropertyEnumerated (normal) and LandingCalls by GetListElevatorGroupLandingCallStatus (no calls outstanding: the callback returns false on its first call, the empty-list answer) regardless. NEW vs B-EM: Landing_Call_Control is now writable - BACnetStack_RegisterCallbackSetElevatorGroupLandingCallControl is registered (unlike B-EM, which deliberately left it unregistered), so a WriteProperty commanding a landing call is recorded and read back through GetListElevatorGroupLandingCallStatus. Code-reviewed against the stack's doc comment and confirmed to build/register correctly; NOT independently wire-verified with a real client in this session (BACnetLandingCallStatus's write-side SEQUENCE-CHOICE encoding is not cleanly expressible through the available test-client library) - flagged in the PR rather than assumed
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|
@@ -370,7 +386,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Recipient_List | BACnetLIST of BACnetDestination | stack default, accepted (None known - a read fails with `unknown-property` or an empt) | no |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### Event Log 1 "Beige" - AE-EL-I-B (F-EVENTLOG, NEW vs B-EC; this series' canonical pattern is B-ALSC-CPP). Enable/Buffer_Size/Record_Count/Total_Record_Count/Log_Buffer/Status_Flags/Object_Identifier/Object_Type/Property_List are NOT stack defaults in the generic sense - they are genuinely held and served by the stack's own Event Log engine (BACnetStack_AddEventLogObject), answered from stack storage BEFORE this file's Get*/Set* callbacks are ever consulted; marked accepted only because property-profile-reference.md's generic table does not know about this object-specific engine. VERIFIED over the wire with a live BACnet client against THIS repository's own build: Object_Name (undefined, the stack's generic non-Device default - no callback serves it), Record_Count and Total_Record_Count (both 0) all read correctly. VERIFIED DEFECT, independently reproduced in this repository (chipkin/cas-bacnet-stack#2045, first found by B-ACC-CPP): adding this object alone causes a continuous, non-fatal 'Failed to set the date'/'Failed to set the time' internal log flood starting from the very first BACnetStack_Tick() - 200 occurrences of each line observed in a 5-second smoke test window. NOTE: B-ALSC-CPP's own task (same object, same BACnetStack_AddEventLogObject call, same stack pin) did NOT observe this flood and its TODO.md/objects.json make no mention of it - the two repositories' object combinations differ (this one also adds Schedule/Calendar/File/Backup-Restore/DM-OCD-B), so the trigger is not 'AddEventLogObject alone' as B-ACC's bisection concluded; it reproduces in at least one combination the same as B-ACC's (Event Log + Schedule/Calendar + File/Backup-Restore) and did not reproduce in B-ALSC's narrower one (Event Log + Schedule/Calendar, no File/Backup-Restore). Flagged in TODO.md with this comparison rather than re-asserting B-ACC's isolation claim unverified. The device otherwise keeps answering Who-Is/ReadProperty correctly throughout the flood (wire-verified)
+### Event Log 1 "Beige" - AE-EL-I-B (F-EVENTLOG, NEW vs B-EC; this series' canonical pattern is B-ALSC-CPP). Enable/Buffer_Size/Record_Count/Log_Buffer/Status_Flags/Object_Identifier/Object_Type/Property_List are held and served by the stack's own Event Log engine (BACnetStack_AddEventLogObject), answered from stack storage before this file's Get*/Set* callbacks are consulted; marked accepted only because property-profile-reference.md's generic table does not know about this engine. Enable starts FALSE and no customer call sets it: a client must write it TRUE before anything is logged. Log_Buffer is read with ReadRange (enabled; a ReadProperty of it is refused, cl. 12.27.13). STACK DEFECTS at 64b2cfac5 (TODO.md): the required Total_Record_Count is missing from Property_List and reads unknown-property; this device's own broadcast notification is logged twice. Checked by hand 2026-10-15: with Enable TRUE a Passenger_Alarm transition is logged and ReadRange returns it
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|
@@ -382,7 +398,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Event_State | BACnetEventState | stack default, accepted (Generic Enumerated default: `0`) | no |
 | Enable | Boolean | stack default, accepted (Generic Boolean default: `false`) | yes |
 
-### Schedule 1 "Saffron" - SCHED-I-B (F-SCHED-I, NEW vs B-EC; canonical pattern from B-AAC-CPP, copied via B-ALSC-CPP's more recent template). Present_Value, Effective_Period, Schedule_Default, List_Of_Object_Property_References, Priority_For_Writing and Status_Flags are NOT stack defaults - they are genuinely held and served by the stack's Schedule engine (BACnetStack_AddScheduleObject plus the BACnetStack_SetSchedule*/AddSchedule* configuration calls in main.cpp); it writes Analog Output 1 (Chartreuse) Present_Value at priority 8. One weekly transition (Monday 08:00) and one calendar-date exception (2026-12-25, inline calendar-entry form) are seeded at start-up. VERIFIED over the wire with a live BACnet client: Object_Name (undefined) and Priority_For_Writing (8) both read back correctly
+### Schedule 1 "Saffron" - SCHED-I-B (F-SCHED-I, NEW vs B-EC; canonical pattern from B-AAC-CPP, copied via B-ALSC-CPP's more recent template). Present_Value, Effective_Period, Schedule_Default, List_Of_Object_Property_References, Priority_For_Writing and Status_Flags are NOT stack defaults - they are genuinely held and served by the stack's Schedule engine (BACnetStack_AddScheduleObject plus the BACnetStack_SetSchedule*/AddSchedule* configuration calls in main.cpp); it writes Analog Output 1 (Chartreuse) Present_Value at priority 8. One weekly transition (Monday 08:00) and one calendar-date exception (2026-12-25, inline calendar-entry form) are seeded at start-up. VERIFIED over the wire with a live bacpypes3 client: Object_Name (undefined) and Priority_For_Writing (8) both read back correctly
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|
@@ -399,7 +415,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Out_Of_Service | Boolean | app | no |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### Calendar 1 "Cream" - Exists for SCHED-I-B completeness alongside Saffron's exception, but its Date_List cannot be populated through the customer API (cas-bacnet-stack issue #963 - no read path for a Calendar object's Date_List; the only generic constructed-property callback is test-tool-only, same gap B-AAC/B-ALSC/B-ACC all document). Present_Value therefore always answers false rather than evaluating a Date_List that is never populated. VERIFIED over the wire: Present_Value read back as false (0)
+### Calendar 1 "Cream" - Exists for SCHED-I-B completeness alongside Saffron's exception. It is a plain AddObject Calendar: its Date_List is empty, so Present_Value always answers false rather than evaluating a Date_List that is never populated. Stack #963 is closed and the customer header now has BACnetStack_AddCalendarObject/AddCalendarDateEntry (a stack-held Calendar); moving Cream to it is open work - see TODO.md
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|
@@ -410,7 +426,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Date_List | BACnetLIST of BACnetCalendarEntry | stack default, accepted (None known - a read fails with `unknown-property` or an empt) | no |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### File 1 "Ivory" - DM-BR-B (F-BACKUP, NEW vs B-EC; canonical pattern from B-ACC-CPP) backup/restore payload carrier - stream access, in-memory 4KB buffer via BACnetStack_RegisterCallbackReadFile/WriteFile. File_Type/File_Size/Modification_Date/Archive/Read_Only all have NO stack default per property-profile-reference.md and are all served here. VERIFIED over the wire: File_Size read back as 0 (empty file) - this repository's own build did NOT reproduce B-ACC-CPP's documented File_Size read-access-denied finding (TODO.md #5 / issue #2046); see TODO.md for the comparison. AtomicReadFile/AtomicWriteFile round-trip and the restore half of the backup/restore cycle were NOT exercised over the wire this session (carrying forward B-ACC's documented, unresolved gap there rather than re-testing it) - see TODO.md
+### File 1 "Ivory" - DM-BR-B (F-BACKUP, NEW vs B-EC; canonical pattern from B-ACC-CPP) backup/restore payload carrier - stream access, in-memory 4KB buffer via BACnetStack_RegisterCallbackReadFile/WriteFile. File_Type, File_Size, Modification_Date, Archive and Read_Only have NO stack default per property-profile-reference.md and are all served here (File_Type and Modification_Date only from 1.1.0 - the discovery Wire Test found both answering read-access-denied before). Modification_Date is stamped at start-up and by every WriteFile. Checked by hand 2026-10-15: STARTBACKUP, AtomicReadFile, ENDBACKUP, STARTRESTORE, AtomicWriteFile, ENDRESTORE all acknowledged and the restored content reads back
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|
@@ -425,7 +441,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | File_Access_Method | BACnetFileAccessMethod | stack | no |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### Analog Value 2 "(created at runtime via DM-OCD-B; not present at start-up)" - DM-OCD-B (F-OCD, NEW vs B-EC and the headline addition of this repository - canonical for the whole series). Analog Value is the ONLY creatable object type (BACnetStack_SetObjectTypeCreatable); no Analog Value instance exists until a client creates one with CreateObject. This row documents instance 2 - the object created and verified in this session's live wire test, then deleted - not a base object present at start-up (it does not appear in the base Object_List). Present_Value is served entirely by this file's g_createdAnalogValues table (no stack default for a non-commandable Analog Value's Present_Value) and made writable at the object-TYPE level (BACnetStack_SetPropertyByObjectTypeWritable, since there is no per-instance object to configure before one is created). Object_Name/Units/Out_Of_Service/Event_State/Status_Flags are accepted at their generic stack defaults (Object_Name reads 'undefined', Units 'no-units') - this example does not attempt to let a client name or configure a newly-created object beyond Present_Value. VERIFIED over the wire with a live BACnet client against this repository's own build: CreateObject(analog-value, 2) accepted (CreateObjectACK); the object then appears in Object_List; ReadProperty of Present_Value (0.0) and Object_Name (undefined) both succeed; WriteProperty of Present_Value to 42.5 accepted and reads back correctly; DeleteObject(analog-value, 2) accepted (SimpleACK); a subsequent ReadProperty of the deleted instance correctly answers Error(object: unknown-object); CreateObject(binary-input, 5) - a non-creatable type - is correctly rejected with a CreateObjectError, never reaching this file's CreateObject callback in a way that allocates anything
+### Analog Value 2 "(created at runtime via DM-OCD-B; not present at start-up)" - DM-OCD-B (F-OCD, NEW vs B-EC and the headline addition of this repository - canonical for the whole series). Analog Value is the ONLY creatable object type (BACnetStack_SetObjectTypeCreatable); no Analog Value instance exists until a client creates one with CreateObject. This row documents instance 2 - the object created and verified in this session's live wire test, then deleted - not a base object present at start-up (it does not appear in the base Object_List). Present_Value is served entirely by this file's g_createdAnalogValues table (no stack default for a non-commandable Analog Value's Present_Value) and made writable at the object-TYPE level (BACnetStack_SetPropertyByObjectTypeWritable, since there is no per-instance object to configure before one is created). Object_Name/Units/Out_Of_Service/Event_State/Status_Flags are accepted at their generic stack defaults (Object_Name reads 'undefined', Units 'no-units') - this example does not attempt to let a client name or configure a newly-created object beyond Present_Value. VERIFIED over the wire with a live bacpypes3 client against this repository's own build: CreateObject(analog-value, 2) accepted (CreateObjectACK); the object then appears in Object_List; ReadProperty of Present_Value (0.0) and Object_Name (undefined) both succeed; WriteProperty of Present_Value to 42.5 accepted and reads back correctly; DeleteObject(analog-value, 2) accepted (SimpleACK); a subsequent ReadProperty of the deleted instance correctly answers Error(object: unknown-object); CreateObject(binary-input, 5) - a non-creatable type - is correctly rejected with a CreateObjectError, never reaching this file's CreateObject callback in a way that allocates anything
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|

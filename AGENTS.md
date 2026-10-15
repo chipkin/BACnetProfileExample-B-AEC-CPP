@@ -148,19 +148,23 @@ over the wire (no interactive key commands either - use a BACnet client).
 - **AE-EL-I-B is the canonical pattern from `BACnetProfileExample-B-ALSC-CPP`,
   copied byte-for-byte**: `BACnetStack_AddEventLogObject` - every property is
   stack-held, not served through a `Get*`/`Set*` callback.
-  **`AddEventLogObject` reproduces a documented stack log flood in THIS
-  repository** ([#2045](https://github.com/chipkin/cas-bacnet-stack/issues/2045)) -
-  see `TODO.md` before assuming it is silent.
+  The log flood #2045 is fixed at the pin. Beige starts with `Enable` FALSE
+  (no customer call sets it), logs its own broadcast notification twice, and
+  lacks `Total_Record_Count` - stack defects, see `TODO.md`. Log_Buffer is read
+  with ReadRange, which this example enables (AE-EL-I-B executes it, K.2.21).
 - **SCHED-I-B is the canonical pattern from `BACnetProfileExample-B-AAC-CPP`**,
   copied via B-ALSC-CPP's template: `BACnetStack_AddScheduleObject` plus the
   `AddSchedule*`/`SetSchedule*` configuration calls - all stack-held, not
-  callback-served. Cream's `Date_List` cannot be populated (stack issue #963);
-  use the inline calendar-entry exception form, not a Calendar reference.
+  callback-served. Cream is still a plain `AddObject` Calendar whose
+  `Present_Value` the app answers FALSE; #963 is fixed and the customer header
+  now has `AddCalendarObject`/`AddCalendarDateEntry`, so moving Cream to a
+  stack-held Calendar is open work (`TODO.md`).
 - **DM-BR-B is the canonical pattern from `BACnetProfileExample-B-ACC-CPP`**,
   copied byte-for-byte: File 1 "Ivory" (stream access) plus
   `ReadFile`/`WriteFile`/`PrepareBackup`/`CompleteBackup`/`PrepareRestore`/
-  `CompleteRestore`. See `TODO.md` for the restore/AtomicReadFile gap carried
-  forward from B-ACC-CPP.
+  `CompleteRestore`. The ReinitializeDevice callback must ACCEPT the
+  backup/restore states (2..6): the stack drives the session only after it
+  returns true. Until 1.1.0 it refused them and no backup could start.
 - **Never edit `common/` in this repo alone** - it is a vendored copy shared by
   every example in the series, with its own version (`COMMON_VERSION`) and
   changelog (`common/CHANGELOG.md`). To change it: edit, bump the version, add
@@ -171,13 +175,15 @@ over the wire (no interactive key commands either - use a BACnet client).
 
 ## How to verify a change
 
-There are no unit tests; verification is behavioural:
+The Wire Tests in `tests/` automate the discovery half of this (README "Wire
+Tests"): `python3 tests/run_wire_tests.py --exe build/BACnetExampleBAEC`. Run them
+after any change. Beyond them, verification is behavioural:
 
 1. Build, then run one instance on a clear UDP port.
 2. With a BACnet client (e.g. the CAS BACnet Explorer, or `bacpypes3`/`BAC0`),
    send **Who-Is** and confirm **I-Am** from the device instance.
 3. **ReadProperty** every required property of every object and confirm the
-   values; confirm `Protocol_Revision` is 24 and `Object_List` lists all
+   values; confirm `Protocol_Revision` is 30 and `Object_List` lists all
    seventeen base objects.
 4. **DM-OCD-B (this repository's headline feature)**: CreateObject
    `analog-value,2`, confirm it appears in `Object_List` and its
@@ -185,23 +191,22 @@ There are no unit tests; verification is behavioural:
    readback; DeleteObject it and confirm a subsequent ReadProperty answers
    `unknown-object`; CreateObject a non-creatable type (e.g. `binary-input,5`)
    and confirm it is rejected.
-5. **AE-EL-I-B**: ReadProperty Beige's `Object_Name`/`Record_Count`/
-   `Total_Record_Count`; watch for the documented log-flood defect (`TODO.md`).
+5. **AE-EL-I-B**: write Beige's `Enable` TRUE, wait for a Passenger_Alarm
+   transition, and ReadRange `Log_Buffer`; `Record_Count` should grow.
 6. **SCHED-I-B**: ReadProperty Saffron's `Priority_For_Writing`; press `s` and
    confirm Chartreuse moves to `SCHEDULE_DEMO_VALUE` on the next tick.
-7. **DM-BR-B**: ReadProperty Ivory's `File_Size`; ReinitializeDevice
-   `startBackup`/`endBackup` and confirm `Backup_And_Restore_State`
-   transitions (restore and AtomicReadFile/AtomicWriteFile carry a documented
-   gap from B-ACC-CPP - see `TODO.md`).
+7. **DM-BR-B**: ReinitializeDevice `startBackup`, AtomicReadFile Ivory,
+   `endBackup`, `startRestore`, AtomicWriteFile, `endRestore`; every step is
+   acknowledged and Ivory reads back what was restored.
 8. **F-OUTPUTS**: WriteProperty each output's `Present_Value` at a priority,
    confirm the readback; relinquish (WriteProperty NULL) and confirm it falls
    back to `Relinquish_Default`; write an out-of-range value to Binary/Multi-
    State Output and confirm `value-out-of-range`.
 9. **F-ELEVATOR**: ReadProperty every Elevator Group / Lift / Escalator
    property (unchanged checklist from B-EC); WriteProperty a landing call to
-   `Landing_Call_Control` and confirm it reads back (this specific write was
-   NOT independently wire-verified during B-EC's own implementation - see
-   CHANGELOG.md - confirm it if you touch this code).
+   `Landing_Call_Control` and confirm it reads back (before any write it reads
+   floor 0, direction none; a raw-encoded write `09 07 19 03` round-tripped on
+   2026-10-15, by hand).
 10. **DS-COVM-B / DS-COV-B, alarming, DM-TS-B, DM-RD-B, DM-DDB-A, device
     management**: unchanged from B-EC.
 11. If you changed the objects or their properties, regenerate `docs/PICS.md`

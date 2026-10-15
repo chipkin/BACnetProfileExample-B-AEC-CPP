@@ -8,8 +8,9 @@ WritePropertyMultiple** to three commandable outputs and to the Elevator
 Group's landing-call control, supports **SubscribeCOV** and
 **SubscribeCOVPropertyMultiple**, generates **intrinsic alarms**
 (EventNotifications when the Lift's `Passenger_Alarm` goes active), accepts
-**AcknowledgeAlarm** and answers **GetEventInformation**, captures an
-**Event Log**, drives an output from a **Schedule**, handles
+**AcknowledgeAlarm** and answers **GetEventInformation**, keeps an
+**Event Log** (once a client enables it - see the status note below), drives
+an output from a **Schedule**, handles
 **DeviceCommunicationControl**, **initiates discovery** (Who-Is) on demand,
 accepts **TimeSynchronization**, accepts **ReinitializeDevice** (including
 Backup/Restore), and - the headline addition over B-EC - lets a BACnet client
@@ -28,11 +29,22 @@ dynamic object creation copies this pattern.
 - **[docs/PICS.md](docs/PICS.md)** - the Protocol Implementation Conformance
   Statement: every object, every property, and who answers it.
 
-> **Versions:** this document describes **example v1.0.0**, built and verified
-> against **CAS BACnet Stack 6.0.21** (`6.x` @ `abd4cee1`), at
-> **Protocol_Revision 24**, with the vendored `common/` helper at **v2.5.0**.
+> **Versions:** this document describes **example v1.1.0**, built and verified
+> against **CAS BACnet Stack 6.0.23** (`6.x` @ `64b2cfac5`), at
+> **Protocol_Revision 30**, with the vendored `common/` helper at **v3.3.0**.
 > Running the example prints all three - if what it prints disagrees with this
 > line, trust the program and check `CHANGELOG.md`.
+
+> **Status: BIBB-conformant, not yet Profile-functional.** The Wire Tests prove
+> every listed property reads; CreateObject/DeleteObject, the Schedule, backup
+> and restore, and the Event Log were checked by hand. But the elevator does
+> not move: a landing call written to `Landing_Call_Control` is **stored and
+> read back, nothing more**, the Lift's `Car_Position` stays at floor 3 and its
+> doors and direction are constants. Three stack limits at this pin are in
+> [TODO.md](TODO.md): the Event Log **starts disabled** (a client must write
+> its `Enable` TRUE before it logs anything - the stack has no call to start it
+> enabled), it logs this device's own broadcast notification **twice**, and its
+> required `Total_Record_Count` property is missing.
 
 ## What this example supports
 
@@ -52,7 +64,7 @@ elevator object family inherited from B-EM/B-EC.
 | AE-N-I-B | Alarm and Event - Notification Internal - B | ✅ (intrinsic ChangeOfState on the Lift's `Passenger_Alarm`) |
 | AE-ACK-B | Alarm and Event - ACK - B | ✅ |
 | AE-INFO-B | Alarm and Event - Information - B | ✅ |
-| AE-EL-I-B | Alarm and Event - Enrollment Log - Internal - B | ✅ (NEW vs B-EC - canonical pattern from B-ALSC-CPP) |
+| AE-EL-I-B | Alarm and Event - Event Log - Internal - B | ✅ with caveats (NEW vs B-EC - canonical pattern from B-ALSC-CPP): starts disabled; see [TODO.md](TODO.md) |
 | SCHED-I-B | Scheduling - Internal - B | ✅ (NEW vs B-EC - canonical pattern from B-AAC-CPP) |
 | DM-DDB-A | Device Management - Dynamic Device Binding - A | ✅ (on demand - the `d` key) |
 | DM-DDB-B | Device Management - Dynamic Device Binding - B | ✅ |
@@ -60,7 +72,7 @@ elevator object family inherited from B-EM/B-EC.
 | DM-DCC-B | Device Management - Device Communication Control - B | ✅ |
 | DM-TS-B | Device Management - TimeSynchronization - B | ✅ (local time only) |
 | DM-OCD-B | Device Management - Object Creation and Deletion - B | ✅ **NEW vs B-EC - this repository is canonical for F-OCD** |
-| DM-RD-B | Device Management - ReinitializeDevice - B | ✅ (COLDSTART and WARMSTART) |
+| DM-RD-B | Device Management - ReinitializeDevice - B | ✅ (COLDSTART and WARMSTART; the backup/restore states are DM-BR-B) |
 | DM-BR-B | Device Management - Backup and Restore - B | ✅ (NEW vs B-EC - canonical pattern from B-ACC-CPP) |
 
 ### Services (executed / initiated)
@@ -74,6 +86,7 @@ elevator object family inherited from B-EM/B-EC.
 | AcknowledgeAlarm, GetEventInformation | Accepts alarm acknowledgement, answers event-information queries. |
 | CreateObject, DeleteObject | Creates/deletes an Analog Value at runtime (DM-OCD-B). |
 | AtomicReadFile, AtomicWriteFile | Backup/restore payload transfer against File 1. |
+| ReadRange | Reads Event Log 1's `Log_Buffer` (AE-EL-I-B) - the only way to read it. |
 | DeviceCommunicationControl | Accepts `disable-initiation` / `enable`, with an optional password. |
 | ReinitializeDevice | Accepts COLDSTART/WARMSTART and the backup/restore states. |
 | TimeSynchronization | Updates `Local_Date`/`Local_Time` from any TimeSynchronization request. |
@@ -117,14 +130,14 @@ Device 389014  "Chipkin Example B-AEC"   (Vendor 389 - Chipkin Automation System
     ├── Binary Output 1            "Fuchsia"     active/inactive; commandable
     ├── Multi-State Output 1       "Indigo"      state 1..3; commandable
     ├── Network Port 1             "Vermilion"   the BACnet/IP port (required)
-    ├── Elevator Group 1           "Maroon"      groups Mauve; F-ELEVATOR; Landing_Call_Control writable
-    ├── Lift 1                     "Mauve"       car position/doors/alarm; intrinsic ChangeOfState ALARM
+    ├── Elevator Group 1           "Maroon"      groups Mauve; F-ELEVATOR; Landing_Call_Control writable (stored only)
+    ├── Lift 1                     "Mauve"       fixed car position/doors (nothing moves); simulated Passenger_Alarm -> intrinsic ChangeOfState ALARM
     ├── Escalator 1                "Mint"        not grouped (escalators aren't lifts)
     ├── Positive Integer Value 1   "Turquoise"   Maroon's Machine_Room_ID target (added before Maroon)
     ├── Notification Class 1       "Crimson"     routes Mauve's Passenger_Alarm events
-    ├── Event Log 1                "Beige"       AE-EL-I-B
+    ├── Event Log 1                "Beige"       AE-EL-I-B; disabled until a client writes Enable TRUE; read with ReadRange
     ├── Schedule 1                 "Saffron"     SCHED-I-B; writes Chartreuse at priority 8
-    ├── Calendar 1                 "Cream"       SCHED-I-B; Date_List not populatable (issue #963)
+    ├── Calendar 1                 "Cream"       SCHED-I-B; Present_Value always FALSE, Date_List empty (see TODO.md)
     ├── File 1                     "Ivory"       DM-BR-B backup/restore payload
     └── Analog Value  (dynamic)    -             DM-OCD-B: created/deleted at runtime, not present at start-up
 ```
@@ -154,6 +167,8 @@ This is a **self-contained** project. It ships:
 - `common/` - the shared helper (UDP, callbacks, CLI, keyboard) vendored in.
 - `CMakeLists.txt` - the build, the same on Windows, Linux, and macOS.
 - `docs/PICS.md` - the conformance statement.
+- `tests/` - the Wire Tests (see [Wire Tests](#wire-tests)), and `wiretest/`, the
+  series' shared Python harness they are written against (vendored, like `common/`).
 - `submodules/cas-bacnet-stack/` - the **CAS BACnet Stack as a git submodule**
   (private; requires a license - see above). Its sources are compiled into the
   executable, so there is no library or DLL to build, ship, or install.
@@ -211,9 +226,9 @@ CMake at it: `cmake -B build -S . -D CAS_STACK_DIR=/path/to/cas-bacnet-stack`.
 Expected output:
 
 ```
-BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.0.0
-CAS BACnet Stack version: 6.0.21.0
-Common helper (common/) version: 2.5.0
+BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.1.0
+CAS BACnet Stack version: 6.0.23.0
+Common helper (common/) version: 3.3.0
 FYI: Listening for BACnet/IP on UDP port 47808 (Network Port 1).
 TX 21 bytes to 192.168.3.255:47808 (broadcast) (Network Port 1)
 FYI: Device 389014 ("Chipkin Example B-AEC") ready. Vendor ID 389. Accepts WriteProperty to Chartreuse/Fuchsia/Indigo and Landing_Call_Control on Maroon. Press 'd' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.
@@ -228,13 +243,11 @@ lines showing the traffic.
 The device listens on UDP **47808** (BACnet/IP). Allow that port through your
 firewall. To use a different port, pass `--port` (see below).
 
-> **A wall of red `Error:` lines at start-up is expected and is not your bug -
-> and on this device there are more of them than usual.** Two are shared with
-> every example in the series (the device hearing its own broadcast I-Am, and a
-> one-time BACnet/SC UUID notice); a third, unique to this example, is a
-> **known, independently reproduced stack log flood** triggered by adding the
-> Event Log object. [TUTORIAL.md](TUTORIAL.md#troubleshooting) explains all
-> three.
+> **A few red `Error:` lines at start-up are expected and are not your bug.**
+> They are shared with every example in the series (the device hearing its own
+> broadcast I-Am, and a one-time BACnet/SC UUID notice).
+> [TUTORIAL.md](TUTORIAL.md#troubleshooting) explains them. (The Event Log log
+> flood earlier versions warned about, stack #2045, is fixed at this pin.)
 
 ### Command-line options
 
@@ -265,12 +278,13 @@ wire - there is no interactive key for them; use a BACnet client.
 
 Use a BACnet client such as the
 [**CAS BACnet Explorer**](https://store.chipkin.com/products/tools/cas-bacnet-explorer).
-This repository's own verification session, against a
-running instance of its own build:
+Earlier verification sessions, against a running instance of this
+repository's build - by hand, not reproducible from the repository except steps
+1 and 2 (the [Wire Tests](#wire-tests)) and the 2026-10-15 checks noted below:
 
 1. **Discover** - Who-Is -> I-Am from `389014` (vendor `389`). ✅ verified.
 2. **Object model** - `Object_List` lists all 17 base objects; `Protocol_Revision`
-   = 24. ✅ verified.
+   = 30. ✅ verified (Wire Test).
 3. **DM-OCD-B (this repository's canonical feature)** - `CreateObject(analog-value,
    2)` accepted; the object appears in `Object_List`; `ReadProperty` of its
    `Present_Value` (0.0) and `Object_Name` (`"undefined"`) both succeed;
@@ -281,26 +295,26 @@ running instance of its own build:
    is correctly rejected with `CreateObjectError`. ✅ verified (see
    [TUTORIAL.md](TUTORIAL.md#who-serves-what-dm-ocd-bs-createobjectdeleteobject-cycle)
    for the full transcript).
-4. **AE-EL-I-B** - `Object_Name`, `Record_Count`, `Total_Record_Count` on
-   Beige all read correctly. ✅ verified. **Independently reproduced defect**:
-   adding Beige causes a continuous internal log flood
-   ([#2045](https://github.com/chipkin/cas-bacnet-stack/issues/2045)) -
-   functionally harmless, the device keeps answering correctly throughout -
-   see [TUTORIAL.md](TUTORIAL.md#troubleshooting) and `TODO.md`.
+4. **AE-EL-I-B** - Beige starts with `Enable` FALSE and logs nothing. Write
+   `Enable` TRUE, wait for the 30-second Passenger_Alarm, and ReadRange
+   `Log_Buffer`: the notification is there (2026-10-15, by hand - twice, see
+   [TODO.md](TODO.md)). `Total_Record_Count` does not exist at this pin
+   ([TODO.md](TODO.md)); a ReadProperty of `Log_Buffer` is refused, correctly
+   (cl. 12.27.13: ReadRange only).
 5. **SCHED-I-B** - Saffron's `Priority_For_Writing` (8) and Cream's
    `Present_Value` (`false`) both read correctly. ✅ verified.
-6. **DM-BR-B** - Ivory's `File_Size` reads back `0` correctly. This
-   repository's own build did **not** reproduce B-ACC-CPP's documented
-   read-access-denied finding for this same property - a genuine, new
-   cross-repository discrepancy, not a re-assertion. ✅ verified; see `TODO.md`.
+6. **DM-BR-B** - ReinitializeDevice STARTBACKUP, AtomicReadFile of Ivory,
+   ENDBACKUP, STARTRESTORE, AtomicWriteFile, ENDRESTORE: every step
+   acknowledged and Ivory reads back the restored content. ✅ verified by hand
+   2026-10-15 (before 1.1.0 the example refused every backup/restore state).
 7. **F-OUTPUTS** - WriteProperty each output's `Present_Value` at a priority;
    relinquish (WriteProperty NULL) falls back to `Relinquish_Default`;
    out-of-range writes to Binary/Multi-State Output are rejected with
    `value-out-of-range`. ✅ verified.
-8. **F-ELEVATOR** - every Elevator Group / Lift / Escalator required property
-   reads correctly. `Landing_Call_Control`'s write path is registered and
-   code-reviewed but was **not** independently wire-verified with a live
-   client in this session - see `TODO.md`.
+8. **F-ELEVATOR** - every Elevator Group / Lift / Escalator property reads
+   (Wire Test). `Landing_Call_Control` reads floor 0, direction `none` before
+   any write; a raw-encoded write (`09 07 19 03`, floor 7 up) reads back
+   unchanged (by hand, 2026-10-15). The car does not move.
 9. **Device management** - `DeviceCommunicationControl`
    `disable-initiation` / `enable` is accepted; `ReinitializeDevice`
    COLDSTART/WARMSTART returns a SimpleAck and resets commanded/simulated
@@ -309,11 +323,30 @@ running instance of its own build:
 For a property-by-property review against the conformance statement, see
 [TUTORIAL.md](TUTORIAL.md).
 
+## Wire Tests
+
+Steps 1 and 2 above, automated: a Python BACnet client drives the running
+example over BACnet/IP from outside it, the way a client discovers a device -
+Who-Is, the Device's `Object_List`, then for every object its `Property_List`
+and a ReadProperty of every property it lists. Every read must come back as a
+value (the Event Log's `Log_Buffer` must instead be refused - it is ReadRange
+only); an Error, Reject or Abort fails the run. Python 3 standard library only:
+
+```bash
+python3 tests/run_wire_tests.py --exe build/BACnetExampleBAEC          # Linux/macOS
+python tests\run_wire_tests.py --exe build\Release\BACnetExampleBAEC.exe   # Windows
+```
+
+It ends with `ALL WIRE TESTS PASSED` (exit 0). CI runs it on Linux after the
+smoke test. [tests/README.md](tests/README.md) says what each check proves. It
+does not yet cover writes, CreateObject/DeleteObject, the Schedule, the Event
+Log, backup/restore, COV or alarming.
+
 
 ## The BACnet profile example series
 
 <!-- PROFILE-TABLE:BEGIN (generated from cas-bacnet-stack-examples/docs/profile-table.md - do not edit here) -->
-The CAS BACnet Stack supports every standardized device profile in ASHRAE 135-2024 Annex L, and there is one example repository per profile. Pick the profile your device claims, then the language you build in. "Ask" means the example hasn't been built yet for that language - [contact Chipkin](https://store.chipkin.com/contact-us) if you need one.
+There is one example repository per standardized device profile in ASHRAE 135-2024 Annex L. An example marked ⛔ is blocked: the stack cannot yet perform that profile's function through its customer interface, and the example's README says what it does today. Pick the profile your device claims, then the language you build in. "Ask" means the example hasn't been built yet for that language - [contact Chipkin](https://store.chipkin.com/contact-us) if you need one.
 
 ### Controllers (Annex L.4)
 
@@ -336,8 +369,8 @@ The CAS BACnet Stack supports every standardized device profile in ASHRAE 135-20
 
 | Profile | C++ | Node.js | C# | Rust | Python | Go |
 |---|---|---|---|---|---|---|
-| **B-ACC** Access Control Controller | [B-ACC-CPP](https://github.com/chipkin/BACnetProfileExample-B-ACC-CPP) | Ask | Ask | Ask | Ask | Ask |
-| **B-AACC** Advanced Access Control Controller | [B-AACC-CPP](https://github.com/chipkin/BACnetProfileExample-B-AACC-CPP) | Ask | Ask | Ask | Ask | Ask |
+| **B-ACC** Access Control Controller | [B-ACC-CPP](https://github.com/chipkin/BACnetProfileExample-B-ACC-CPP) ⛔ blocked on [stack #2150](https://github.com/chipkin/cas-bacnet-stack/issues/2150), [#2044](https://github.com/chipkin/cas-bacnet-stack/issues/2044) | Ask | Ask | Ask | Ask | Ask |
+| **B-AACC** Advanced Access Control Controller | [B-AACC-CPP](https://github.com/chipkin/BACnetProfileExample-B-AACC-CPP) ⛔ blocked on [stack #2150](https://github.com/chipkin/cas-bacnet-stack/issues/2150), [#2044](https://github.com/chipkin/cas-bacnet-stack/issues/2044) | Ask | Ask | Ask | Ask | Ask |
 
 ### Lighting controllers (Annex L.11)
 
@@ -358,7 +391,7 @@ The CAS BACnet Stack supports every standardized device profile in ASHRAE 135-20
 
 | Profile | C++ | Node.js | C# | Rust | Python | Go |
 |---|---|---|---|---|---|---|
-| **B-AS** Authorization Server | [B-AS-CPP](https://github.com/chipkin/BACnetProfileExample-B-AS-CPP) | Ask | Ask | Ask | Ask | Ask |
+| **B-AS** Authorization Server | [B-AS-CPP](https://github.com/chipkin/BACnetProfileExample-B-AS-CPP) ⛔ blocked on [stack #2043](https://github.com/chipkin/cas-bacnet-stack/issues/2043) | Ask | Ask | Ask | Ask | Ask |
 
 ### Miscellaneous (Annex L.7, combinable with any one family)
 
@@ -366,10 +399,10 @@ The CAS BACnet Stack supports every standardized device profile in ASHRAE 135-20
 |---|---|---|---|---|---|---|
 | **B-BBMD** Broadcast Management Device | [B-BBMD-CPP](https://github.com/chipkin/BACnetProfileExample-B-BBMD-CPP) | Ask | Ask | Ask | Ask | Ask |
 | **B-ACDC** Access Control Door Controller | [B-ACDC-CPP](https://github.com/chipkin/BACnetProfileExample-B-ACDC-CPP) | Ask | Ask | Ask | Ask | Ask |
-| **B-ACCR** Access Control Credential Reader | [B-ACCR-CPP](https://github.com/chipkin/BACnetProfileExample-B-ACCR-CPP) | Ask | Ask | Ask | Ask | Ask |
+| **B-ACCR** Access Control Credential Reader | [B-ACCR-CPP](https://github.com/chipkin/BACnetProfileExample-B-ACCR-CPP) ⛔ blocked on [stack #3934](https://github.com/chipkin/cas-bacnet-stack/issues/3934) | Ask | Ask | Ask | Ask | Ask |
 | **B-RTR** Router | [B-RTR-CPP](https://github.com/chipkin/BACnetProfileExample-B-RTR-CPP) | Ask | Ask | Ask | Ask | Ask |
 | **B-GW** Gateway | [B-GW-CPP](https://github.com/chipkin/BACnetProfileExample-B-GW-CPP) | Ask | Ask | Ask | Ask | Ask |
-| **B-DAP** Device Address Proxy | [B-DAP-CPP](https://github.com/chipkin/BACnetProfileExample-B-DAP-CPP) | Ask | Ask | Ask | Ask | Ask |
+| **B-DAP** Device Address Proxy | [B-DAP-CPP](https://github.com/chipkin/BACnetProfileExample-B-DAP-CPP) ⛔ blocked on [stack #2032](https://github.com/chipkin/cas-bacnet-stack/issues/2032) | Ask | Ask | Ask | Ask | Ask |
 | **B-SCHUB** BACnet/SC Hub | [B-SCHUB-CPP](https://github.com/chipkin/BACnetProfileExample-B-SCHUB-CPP) | Ask | Ask | Ask | Ask | Ask |
 | **B-GENERAL** General device (Annex L.8) | *(satisfied by every example above)* | — | — | — | — | — |
 
@@ -397,7 +430,7 @@ Client-side profiles.
 | **B-EWS** Elevator Workstation | planned | — | — | — | — | — |
 | **B-AEWS** Advanced Elevator Workstation | planned | — | — | — | — | — |
 
-🚧 = in progress. "Ask" = not yet built for that language; contact Chipkin if you need it. Profile definitions: ANSI/ASHRAE 135-2024 Annex L. BIBB definitions: Annex K. Get the stack: <https://store.chipkin.com/services/stacks/bacnet-stack>.
+🚧 = in progress. ⛔ = Blocked Example (blocked on the named stack gap). "Ask" = not yet built for that language; contact Chipkin if you need it. Profile definitions: ANSI/ASHRAE 135-2024 Annex L. BIBB definitions: Annex K. Get the stack: <https://store.chipkin.com/services/stacks/bacnet-stack>.
 <!-- PROFILE-TABLE:END -->
 
 ## References
