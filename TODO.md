@@ -7,29 +7,17 @@ This example is **BIBB-conformant, not yet Profile-functional** (series
 `docs/GLOSSARY.md`): the elevator does not move, and only discovery is a Wire
 Test. That work is the example's own scope, not blocked on the stack.
 
-## Stack defects found at this pin (not filed - for the series coordinator to verify and file)
+## Stack defects found at this pin
 
-### 1. Event Log `Total_Record_Count` is missing
+### 1. (withdrawn) Event Log `Total_Record_Count`
 
-135-2024 cl. 12.27, the Event Log property table, lists `Total_Record_Count`
-(Unsigned32) as **R**. At `64b2cfac5`, Event Log 1 (Beige)'s `Property_List`
-does not contain it and a ReadProperty answers Error `property` /
-`unknown-property` (class 2, code 32), on Windows (STATIC) and Linux (SOURCE):
-
-```
-Property_List: [36, 111, 126, 131, 133, 137, 140, 141, 144, 145, 173]
-ReadProperty Event Log 1 Total_Record_Count (322): Error class=2 code=32
-BACnetBusinessLogic.cpp(1728) - Error: Property does not exist, objectType[25], objectInstance=[1], propertyIdentifier=[322]
-```
-
-The example does not disable it, and `BACnetStack_SetPropertyEnabled(..., 322,
-true)` is refused, so there is no workaround here. The stack's own
-`BACnetDBPropertyProfile::GetRequiredPropertiesForEventLog` lists
-`totalRecordCount`, and `CASBACnetStackDLL.h`'s `BACnetStack_AddEventLogObject`
-doc says the stack stores and serves it. The discovery Wire Test cannot see
-this: it reads only what `Property_List` lists.
+Not a stack defect. The probe read property 322, which is Access_Event_Tag. Total_Record_Count is
+**145**, and 145 is in the `Property_List` captured above (`[..., 144, 145, 173]`), so the
+property is present. A ReadProperty of 322 correctly answers unknown-property.
 
 ### 2. No customer way to start an Event Log enabled
+
+Already filed: [#3301](https://github.com/chipkin/cas-bacnet-stack/issues/3301).
 
 `Enable` (cl. 12.27.8) defaults to FALSE and `BACnetStack_AddEventLogObject`
 takes no enable argument; the customer header has no other call that sets it
@@ -41,6 +29,8 @@ after a WriteProperty of `Enable` TRUE (SimpleACK) it logs. L.13.1 asks for
 today that needs an operator's write first. The README says so.
 
 ### 3. The device's own broadcast notification is logged twice
+
+Filed: [#3957](https://github.com/chipkin/cas-bacnet-stack/issues/3957). Verification found it is the stack's fault, not `common/`'s.
 
 With `Enable` TRUE, one Passenger_Alarm transition gives `Record_Count` 3: the
 log-status record for the Enable write, then the **same** notification twice -
