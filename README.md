@@ -29,22 +29,82 @@ dynamic object creation copies this pattern.
 - **[docs/PICS.md](docs/PICS.md)** - the Protocol Implementation Conformance
   Statement: every object, every property, and who answers it.
 
-> **Versions:** this document describes **example v1.1.0**, built and verified
+> **Versions:** this document describes **example v1.2.0**, built and verified
 > against **CAS BACnet Stack 6.0.23** (`6.x` @ `64b2cfac5`), at
 > **Protocol_Revision 30**, with the vendored `common/` helper at **v3.4.0**.
 > Running the example prints all three - if what it prints disagrees with this
 > line, trust the program and check `CHANGELOG.md`.
 
-> **Status: BIBB-conformant, not yet Profile-functional.** The Wire Tests prove
-> every listed property reads; CreateObject/DeleteObject, the Schedule, backup
-> and restore, and the Event Log were checked by hand. But the elevator does
-> not move: a landing call written to `Landing_Call_Control` is **stored and
-> read back, nothing more**, the Lift's `Car_Position` stays at floor 3 and its
-> doors and direction are constants. Three stack limits at this pin are in
-> [TODO.md](TODO.md): the Event Log **starts disabled** (a client must write
-> its `Enable` TRUE before it logs anything - the stack has no call to start it
-> enabled), it logs this device's own broadcast notification **twice**, and its
-> required `Total_Record_Count` property is missing.
+## The scenario: an elevator a management station commands
+
+What a B-AEC is for, quoted from ANSI/ASHRAE 135-2024 Annex L.13.1: **"A B-AEC
+device performs control of elevators. It supports the modification and
+commanding of its elevator objects by another device."** The same clause adds
+object creation and deletion by another device, alarms logged in an Event Log,
+schedules, clock synchronisation and configuration backup/restore. This example
+does each of them against a Peer - an elevator management station, an
+operator workstation, or the Python client in [`tests/`](tests/README.md):
+
+1. **A landing call moves the car.** The Peer writes Elevator Group 1
+   (`Maroon`)'s `Landing_Call_Control` - floor 6, up. Clause 12.58.10: "A write
+   to this property is equivalent to a passenger pressing a call button at a
+   landing". The call appears in `Maroon`'s `Landing_Calls` and in Lift 1
+   (`Mauve`)'s `Assigned_Landing_Calls`; the car leaves floor 3 with
+   `Car_Moving_Direction` `up`, `Car_Position` counts 4, 5, 6, the car stops,
+   `Car_Door_Status` reads `opened`, the call leaves both lists, and 3 s later
+   the door closes.
+2. **Failure Mode - a floor that does not exist.** A landing call for floor 11
+   (this installation serves floors 1-10) is refused with an Error and the car
+   does not move.
+3. **Objects created and deleted by another device (DM-OCD-B).** The Peer
+   creates an Analog Value, writes it, deletes it. Creating a type this device
+   does not create, a duplicate, or a ninth Analog Value is refused with the
+   error clause 15.3.1.3.1 names; deleting Analog Output 1 is refused
+   (OBJECT_DELETION_NOT_PERMITTED).
+4. **The schedule runs on a clock the Peer sets.** TimeSynchronization to
+   Monday 07:59:56; four seconds later, on the controller's own running clock,
+   Schedule 1 (`Saffron`) moves Analog Output 1 (`Chartreuse`) from 20.0 to
+   75.0 at priority 8.
+5. **The Event Log captures the elevator's alarms.** Once the Peer writes Event
+   Log 1 (`Beige`)'s `Enable` TRUE, each Passenger_Alarm transition of the Lift
+   is logged, and ReadRange of `Log_Buffer` returns the notification.
+6. **Backup and restore.** The Peer backs the configuration up (ReinitializeDevice
+   START_BACKUP, AtomicReadFile of File 1, END_BACKUP), changes it, restores it
+   (START_RESTORE, AtomicWriteFile, END_RESTORE), and the configuration is the
+   backed-up one again. **Failure Modes:** a wrong password is refused
+   (PASSWORD_FAILURE) and starts nothing; a restored file that is not a
+   configuration image changes nothing.
+
+Every one of these is a [Wire Test](#wire-tests). Two stack limits at this pin
+show as `[KNOWN GAP]` lines and are in [TODO.md](TODO.md): the Event Log **starts
+disabled** (a client must write `Enable` TRUE - the customer API has no call to
+start it enabled, stack #3301), and it logs this device's own broadcast
+notification **twice** (stack #3957). A third: the landing-call callback has no
+error-code out-parameter, so the refusal in step 2 answers WRITE_ACCESS_DENIED,
+not VALUE_OUT_OF_RANGE.
+
+### What is Simulation
+
+Non-BACnet scaffolding, outside the BACnet Surface, labelled `SIMULATION` in
+[`main.cpp`](main.cpp):
+
+- **The elevator car** behind Lift 1 (`Mauve`). A real B-AEC drives its
+  elevator machinery over its own bus; this example has none, so a small model
+  stands in: one car, floors 1-10, starting at floor 3, 2 s per floor, door open
+  3 s at each stop, landing calls served first come first served with a stop at
+  any floor on the way that also has a call. It is what `Car_Position`,
+  `Car_Moving_Direction`, `Car_Door_Status`, `Landing_Door_Status`,
+  `Landing_Calls` and `Assigned_Landing_Calls` report. Replace it with the
+  interface to your elevator controller.
+- **The Passenger_Alarm button** in the car, which flips every 30 s on a timer.
+  The environment variable `BAEC_TEST_PASSENGER_ALARM_SECONDS=<n>` shortens
+  that period for the Wire Tests; it is not a command-line option and changes
+  nothing a BACnet client can reach.
+- **The clock** is the host's clock plus the correction the last
+  TimeSynchronization applied; a real device sets its RTC.
+
+The BACnet behaviour around them - the landing-call write, the Lift's
+properties, the alarm algorithm, the Event Log, the Schedule - is real.
 
 ## What this example supports
 
@@ -130,16 +190,16 @@ Device 389014  "Chipkin Example B-AEC"   (Vendor 389 - Chipkin Automation System
     ├── Binary Output 1            "Fuchsia"     active/inactive; commandable
     ├── Multi-State Output 1       "Indigo"      state 1..3; commandable
     ├── Network Port 1             "Vermilion"   the BACnet/IP port (required)
-    ├── Elevator Group 1           "Maroon"      groups Mauve; F-ELEVATOR; Landing_Call_Control writable (stored only)
-    ├── Lift 1                     "Mauve"       fixed car position/doors (nothing moves); simulated Passenger_Alarm -> intrinsic ChangeOfState ALARM
+    ├── Elevator Group 1           "Maroon"      groups Mauve; a write to Landing_Call_Control calls the car; Landing_Calls lists open calls
+    ├── Lift 1                     "Mauve"       the car Simulation: Car_Position / Car_Moving_Direction / Car_Door_Status; simulated Passenger_Alarm -> intrinsic ChangeOfState ALARM
     ├── Escalator 1                "Mint"        not grouped (escalators aren't lifts)
     ├── Positive Integer Value 1   "Turquoise"   Maroon's Machine_Room_ID target (added before Maroon)
     ├── Notification Class 1       "Crimson"     routes Mauve's Passenger_Alarm events
     ├── Event Log 1                "Beige"       AE-EL-I-B; disabled until a client writes Enable TRUE; read with ReadRange
     ├── Schedule 1                 "Saffron"     SCHED-I-B; writes Chartreuse at priority 8
     ├── Calendar 1                 "Cream"       SCHED-I-B; Present_Value always FALSE, Date_List empty (see TODO.md)
-    ├── File 1                     "Ivory"       DM-BR-B backup/restore payload
-    └── Analog Value  (dynamic)    -             DM-OCD-B: created/deleted at runtime, not present at start-up
+    ├── File 1                     "Ivory"       DM-BR-B: holds the configuration image during a backup or restore
+    └── Analog Value  (dynamic)    -             DM-OCD-B: created/deleted at runtime (up to 8); the configuration a backup saves
 ```
 
 ## Requires the CAS BACnet Stack (licensed product)
@@ -226,7 +286,7 @@ CMake at it: `cmake -B build -S . -D CAS_STACK_DIR=/path/to/cas-bacnet-stack`.
 Expected output:
 
 ```
-BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.1.0
+BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.2.0
 CAS BACnet Stack version: 6.0.23.0
 Common helper (common/) version: 3.4.0
 FYI: Listening for BACnet/IP on UDP port 47808 (Network Port 1).
@@ -255,6 +315,7 @@ firewall. To use a different port, pass `--port` (see below).
 |--------|---------|---------|
 | `--port <n>` | `47808` | UDP port to listen on (BACnet/IP). |
 | `--deviceID <n>` | `389014` | The device's BACnet instance number (BACnet requires this to be configurable). |
+| `--dcc-password <string>` | none | The password DeviceCommunicationControl and ReinitializeDevice (including backup and restore) must carry. Without it any request is accepted. |
 | `--help`, `-h` | - | Show usage and exit. |
 | `--version` | - | Print the example, stack, and `common/` helper versions, then exit. |
 
@@ -276,72 +337,59 @@ wire - there is no interactive key for them; use a BACnet client.
 
 ## Verify
 
-Use a BACnet client such as the
-[**CAS BACnet Explorer**](https://store.chipkin.com/products/tools/cas-bacnet-explorer).
-Earlier verification sessions, against a running instance of this
-repository's build - by hand, not reproducible from the repository except steps
-1 and 2 (the [Wire Tests](#wire-tests)) and the 2026-10-15 checks noted below:
+**Automated, on the wire** - [`tests/`](tests/README.md) (Python 3 standard
+library only). One command starts the controller once per test script and
+drives it from a Python client - the Peer:
 
-1. **Discover** - Who-Is -> I-Am from `389014` (vendor `389`). ✅ verified.
-2. **Object model** - `Object_List` lists all 17 base objects; `Protocol_Revision`
-   = 30. ✅ verified (Wire Test).
-3. **DM-OCD-B (this repository's canonical feature)** - `CreateObject(analog-value,
-   2)` accepted; the object appears in `Object_List`; `ReadProperty` of its
-   `Present_Value` (0.0) and `Object_Name` (`"undefined"`) both succeed;
-   `WriteProperty` of `Present_Value` to 42.5 accepted and reads back
-   correctly; `DeleteObject(analog-value, 2)` accepted; a subsequent
-   `ReadProperty` of that instance correctly answers `Error(object:
-   unknown-object)`; `CreateObject(binary-input, 5)` - not marked creatable -
-   is correctly rejected with `CreateObjectError`. ✅ verified (see
-   [TUTORIAL.md](TUTORIAL.md#who-serves-what-dm-ocd-bs-createobjectdeleteobject-cycle)
-   for the full transcript).
-4. **AE-EL-I-B** - Beige starts with `Enable` FALSE and logs nothing. Write
-   `Enable` TRUE, wait for the 30-second Passenger_Alarm, and ReadRange
-   `Log_Buffer`: the notification is there (2026-10-15, by hand - twice, see
-   [TODO.md](TODO.md)). `Total_Record_Count` does not exist at this pin
-   ([TODO.md](TODO.md)); a ReadProperty of `Log_Buffer` is refused, correctly
-   (cl. 12.27.13: ReadRange only).
-5. **SCHED-I-B** - Saffron's `Priority_For_Writing` (8) and Cream's
-   `Present_Value` (`false`) both read correctly. ✅ verified.
-6. **DM-BR-B** - ReinitializeDevice STARTBACKUP, AtomicReadFile of Ivory,
-   ENDBACKUP, STARTRESTORE, AtomicWriteFile, ENDRESTORE: every step
-   acknowledged and Ivory reads back the restored content. ✅ verified by hand
-   2026-10-15 (before 1.1.0 the example refused every backup/restore state).
+```bash
+python3 tests/run_wire_tests.py --exe build/BACnetExampleBAEC              # Linux/macOS
+python tests\run_wire_tests.py --exe build\Release\BACnetExampleBAEC.exe   # Windows
+```
+
+It ends with `ALL WIRE TESTS PASSED` (exit 0). Six scripts, one per part of the
+scenario above: discovery (every property every object lists reads as a value;
+the Event Log's `Log_Buffer` is refused, as ReadRange only), the elevator,
+CreateObject/DeleteObject, the Schedule over TimeSynchronization, the Event Log
+over ReadRange, and backup/restore - with their Failure Modes. Each check has
+been shown to fail with its feature removed (the table at the end of
+[tests/README.md](tests/README.md)). A `[KNOWN GAP]` line is a stack defect,
+listed in [TODO.md](TODO.md). CI runs them on Linux after the smoke test.
+
+**By hand** - with a BACnet client such as the
+[**CAS BACnet Explorer**](https://store.chipkin.com/products/tools/cas-bacnet-explorer):
+
+1. **Discover** - Who-Is -> I-Am from `389014` (vendor `389`); `Object_List`
+   lists the 17 base objects; `Protocol_Revision` = 30.
+2. **Call the elevator** - WriteProperty Elevator Group 1 `Landing_Call_Control`
+   with a BACnetLandingCallStatus (floor 7, direction up - raw `09 07 19 03`).
+   Read Lift 1 `Car_Position` every second or two: 3, 4, 5, 6, 7, then
+   `Car_Door_Status[1]` `opened`, then `closed`. The console prints every step.
+3. **Create an object** - CreateObject `analog-value` 100, write its
+   `Present_Value`, read it back, DeleteObject it.
+4. **Run the schedule** - TimeSynchronization to a Monday at 07:59:50 and read
+   Analog Output 1 `Present_Value` a few times: 20.0, then 75.0 after 08:00.
+5. **Log an alarm** - WriteProperty Event Log 1 `Enable` TRUE, wait for the
+   30-second Passenger_Alarm, ReadRange `Log_Buffer`.
+6. **Back up and restore** - ReinitializeDevice STARTBACKUP, AtomicReadFile of
+   File 1 (the text `B-AEC configuration 1` and one line per created Analog
+   Value), ENDBACKUP; change a created Analog Value; STARTRESTORE,
+   AtomicWriteFile of the saved bytes, ENDRESTORE; the value is back.
 7. **F-OUTPUTS** - WriteProperty each output's `Present_Value` at a priority;
    relinquish (WriteProperty NULL) falls back to `Relinquish_Default`;
    out-of-range writes to Binary/Multi-State Output are rejected with
-   `value-out-of-range`. ✅ verified.
-8. **F-ELEVATOR** - every Elevator Group / Lift / Escalator property reads
-   (Wire Test). `Landing_Call_Control` reads floor 0, direction `none` before
-   any write; a raw-encoded write (`09 07 19 03`, floor 7 up) reads back
-   unchanged (by hand, 2026-10-15). The car does not move.
-9. **Device management** - `DeviceCommunicationControl`
-   `disable-initiation` / `enable` is accepted; `ReinitializeDevice`
-   COLDSTART/WARMSTART returns a SimpleAck and resets commanded/simulated
-   values as documented.
+   `value-out-of-range`.
+8. **Device management** - `DeviceCommunicationControl` `disable-initiation` /
+   `enable` is accepted; `ReinitializeDevice` COLDSTART/WARMSTART returns a
+   SimpleAck and resets commanded/simulated values (the car returns to floor
+   3).
 
 For a property-by-property review against the conformance statement, see
 [TUTORIAL.md](TUTORIAL.md).
 
 ## Wire Tests
 
-Steps 1 and 2 above, automated: a Python BACnet client drives the running
-example over BACnet/IP from outside it, the way a client discovers a device -
-Who-Is, the Device's `Object_List`, then for every object its `Property_List`
-and a ReadProperty of every property it lists. Every read must come back as a
-value (the Event Log's `Log_Buffer` must instead be refused - it is ReadRange
-only); an Error, Reject or Abort fails the run. Python 3 standard library only:
-
-```bash
-python3 tests/run_wire_tests.py --exe build/BACnetExampleBAEC          # Linux/macOS
-python tests\run_wire_tests.py --exe build\Release\BACnetExampleBAEC.exe   # Windows
-```
-
-It ends with `ALL WIRE TESTS PASSED` (exit 0). CI runs it on Linux after the
-smoke test. [tests/README.md](tests/README.md) says what each check proves. It
-does not yet cover writes, CreateObject/DeleteObject, the Schedule, the Event
-Log, backup/restore, COV or alarming.
-
+See [Verify](#verify) above and [tests/README.md](tests/README.md) for what
+each check proves.
 
 ## The BACnet profile example series
 

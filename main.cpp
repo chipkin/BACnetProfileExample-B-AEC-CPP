@@ -2,17 +2,22 @@
 // Public-domain example code (CC0) - see LICENSE. The CAS BACnet Stack itself is
 // a separate, commercially licensed product and is not covered by CC0.
 // =============================================================================
-// BACnet Profile Example - B-EC (Elevator Controller) - C++
+// BACnet Profile Example - B-AEC (Advanced Elevator Controller) - C++
 //
-// This example implements the BACnet "B-EC" (Elevator Controller) device
-// profile: everything the B-EM (Elevator Monitor) example demonstrates, PLUS
-// commands. Where a B-EM only ever reports what an elevator installation is
-// doing, a B-EC is the controller a management station actually directs: it
-// accepts WriteProperty/WritePropertyMultiple to a set of commandable outputs,
-// a landing call on the Elevator Group, TimeSynchronization, and
-// ReinitializeDevice.
+// This example implements the BACnet "B-AEC" (Advanced Elevator Controller)
+// device profile, ANSI/ASHRAE 135-2024 Annex L.13.1: "A B-AEC device performs
+// control of elevators. It supports the modification and commanding of its
+// elevator objects by another device." A management station writes a landing
+// call to the Elevator Group and the car (a SIMULATION here - see section 1,
+// "SIMULATION: the elevator car") answers it; another device can create and
+// delete objects (DM-OCD-B), the device logs its own alarms in an Event Log
+// (AE-EL-I-B), runs a Schedule on a clock a client synchronises (SCHED-I-B,
+// DM-TS-B), and its configuration can be backed up and restored (DM-BR-B).
+// tests/ proves each of these on the wire.
 //
-// A B-EC (ANSI/ASHRAE 135, Annex L.14) must support:
+// It is the B-EC (Elevator Controller, L.13.2) example - everything the B-EM
+// (Elevator Monitor) demonstrates, plus commands - with B-AEC's additions. Its
+// B-EC base supports:
 //
 //     DS-RP-B, DS-RPM-B       - ReadProperty + ReadPropertyMultiple,
 //     DS-WP-B, DS-WPM-B       - WriteProperty + WritePropertyMultiple (NEW vs B-EM),
@@ -28,8 +33,12 @@
 //     DM-TS-B (or DM-UTC-B)   - TimeSynchronization (NEW vs B-EM),
 //     DM-RD-B                 - ReinitializeDevice (NEW vs B-EM).
 //
-// WHAT IS NOT IMPLEMENTED (see README.md "What this example does NOT do" +
-// TODO.md): nothing required by B-EC is missing at this stack pin.
+// and B-AEC adds AE-EL-I-B, SCHED-I-B, DM-OCD-B and DM-BR-B (sections marked
+// "NEW vs B-EC" below).
+//
+// WHAT IS NOT IMPLEMENTED (see TODO.md): nothing B-AEC requires is missing at
+// this stack pin; TODO.md lists the stack limits the Wire Tests report as
+// [KNOWN GAP] lines.
 //
 // This example seeds from B-EM and grafts in three feature blocks that
 // are canonical elsewhere in the series, unchanged:
@@ -38,9 +47,10 @@
 //                   Commandable struct, SetPropertyWritable(Present_Value), the
 //                   Set/Null callbacks) - canonical in B-SA-CPP, copied here
 //                   verbatim (constants, struct, helpers, callbacks).
-//     F-TIMESYNC  - TimeSynchronization + Local_Date/Local_Time - canonical in
-//                   B-LD-CPP, copied here verbatim (SyncedDateTime,
-//                   InitSyncedDateTimeFromHost, SetSystemTime, GetPropertyDate/Time).
+//     F-TIMESYNC  - TimeSynchronization + Local_Date/Local_Time - a running
+//                   device clock (host clock + the offset the last sync set),
+//                   B-AAC-CPP's pattern (GetDeviceLocalTm, SetSystemTime,
+//                   GetPropertyDate/Time) - the Schedule runs on it.
 //     F-REINIT    - ReinitializeDevice with a deferred (post-ACK) restart -
 //                   canonical pattern shared by B-AAC/B-ASC/B-LSC, copied here
 //                   verbatim (PasswordAccepted, ReinitializeDevice, the
@@ -55,9 +65,10 @@
 // file header). This example registers
 // BACnetStack_RegisterCallbackSetElevatorGroupLandingCallControl, so a
 // WriteProperty naming a floor/direction/door is accepted - the "controller"
-// half of "Elevator Controller". The call is only RECORDED: nothing in this
-// example moves the car (Car_Position stays at floor 3) - a real installation
-// forwards it to the elevator. It is read back through the SAME GetListElevatorGroupLandingCallStatus callback
+// half of "Elevator Controller". The call goes to the elevator car SIMULATION
+// (section 1, "SIMULATION: the elevator car"), which moves Lift 1 to the floor,
+// opens its door and answers the call - a real installation forwards it to the
+// elevator. It is read back through the SAME GetListElevatorGroupLandingCallStatus callback
 // B-EM registered, now also serving LandingCallControl (distinguished from
 // LandingCalls by the propertyIdentifier parameter, which B-EM's read-only
 // version ignored because it only ever answered LandingCalls).
@@ -77,8 +88,9 @@
 //     Network Port 1             "Vermilion"    (the BACnet/IP port - required)
 //     Elevator Group 1           "Maroon"       (groups Mauve; a group of Lifts;
 //                                                Landing_Call_Control now writable)
-//     Lift 1                     "Mauve"        (fixed car position and doors - nothing moves;
-//                                                   simulated passenger alarm; intrinsic alarming)
+//     Lift 1                     "Mauve"        (the elevator car SIMULATION - moves to answer
+//                                                   landing calls; simulated passenger alarm;
+//                                                   intrinsic alarming)
 //     Escalator 1                "Mint"         (not part of the Elevator Group - escalators
 //                                                aren't lifts, so it uses the "no reference" sentinel)
 //     Positive Integer Value 1   "Turquoise"    (the Elevator Group's Machine_Room_ID target -
@@ -113,7 +125,8 @@
 // DM-DDB-A: broadcast a demo Who-Is on demand (see docs/menu-keys.md - the same
 // key B-LS claims for its own remote-discovery demo). There is no key to fire
 // the Lift's Passenger_Alarm alarm - it is simulated on a 30-second timer
-// instead. Command line: --port <n>, --deviceID <n>.
+// instead (BAEC_TEST_PASSENGER_ALARM_SECONDS shortens it for the Wire Tests).
+// Command line: --port <n>, --deviceID <n>, --dcc-password <string>.
 //
 // All the UDP/stack plumbing lives in common/CASExampleHelper so this file can
 // stay focused on the BACnet logic.
@@ -128,7 +141,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <string> // std::string - g_firmwareRevision, built at runtime; see its own comment below
-#include <time.h> // time() - the Passenger_Alarm simulation timer
+#include <stdlib.h> // strtod(), strtoul() - the backup image parser
+#include <time.h> // time() - the device clock and the Passenger_Alarm simulation timer
+#include <chrono> // std::chrono::steady_clock - the elevator car Simulation's timing
 
 #if defined(_WIN32)
 #include <windows.h> // Sleep()
@@ -142,7 +157,7 @@ using namespace CASBACnetStackExampleConstants;
 // 1. Example + device configuration
 // -----------------------------------------------------------------------------
 static const char* APP_NAME = "BACnet B-AEC (Advanced Elevator Controller) Example - C++";
-static const char* APP_VERSION = "1.1.0";
+static const char* APP_VERSION = "1.2.0";
 
 // The device instance. BACnet requires this to be configurable, so it defaults
 // to 389014 and can be overridden on the command line with --deviceID.
@@ -181,12 +196,15 @@ static const char* DEVICE_DESCRIPTION =
 static const char* VENDOR_NAME = "Chipkin Automation Systems"; // CHANGE THIS: must match VENDOR_IDENTIFIER above.
 static const char* MODEL_NAME = "CAS BACnet Stack Example - B-AEC"; // CHANGE THIS: your model designation - what a building operator reads to identify your device.
 
-// DeviceCommunicationControl password. A management station may include a password
-// with a DeviceCommunicationControl request; the device accepts the command only if
-// it matches. Set to NULL/empty to accept any request (no password required).
-// Change this to your device's secret before shipping. It crosses the wire in
-// PLAINTEXT - a guard against accidents, not a security boundary.
-static const char* DCC_PASSWORD = "";  // "" = no password required
+// DeviceCommunicationControl / ReinitializeDevice password. A management station
+// may include a password with either request (including the backup and restore
+// states of ReinitializeDevice, DM-BR-B); the device accepts the command only if it
+// matches. "" accepts any request (no password required). --dcc-password <string>
+// sets it at start-up (CASExampleHelper::ParseDccPasswordArg). Change the default to
+// your device's secret before shipping. It crosses the wire in PLAINTEXT - a guard
+// against accidents, not a security boundary.
+static const char* DEFAULT_DCC_PASSWORD = "";  // "" = no password required
+static const char* g_dccPassword = DEFAULT_DCC_PASSWORD;
 
 // Application_Software_Version (12) is just APP_VERSION - one source of
 // truth, so it can never drift from what --version/the startup banner
@@ -380,15 +398,19 @@ static const uint32_t PROPERTY_IDENTIFIER_PASSENGER_ALARM = 478;
 static const uint32_t PROPERTY_IDENTIFIER_POWER_MODE = 479;
 static const uint32_t PROPERTY_IDENTIFIER_REGISTERED_CAR_CALL = 480;
 
-// BACnetLiftCarDirectionEnum (BACnetLiftCarDirection.h)
+// BACnetLiftCarDirection (135-2024 cl. 21; BACnetLiftCarDirection.h)
 static const uint32_t LIFT_CAR_DIRECTION_NONE = 1;
+static const uint32_t LIFT_CAR_DIRECTION_STOPPED = 2;
 static const uint32_t LIFT_CAR_DIRECTION_UP = 3;
+static const uint32_t LIFT_CAR_DIRECTION_DOWN = 4;
 // BACnetLandingCallStatus's command CHOICE, as the landing-call callbacks pass it
 // (BACnetLandingCallStatus.h): 1 = direction, 2 = destination.
 static const uint8_t LANDING_CALL_COMMAND_DIRECTION = 1;
+static const uint8_t LANDING_CALL_COMMAND_DESTINATION = 2;
 // BACnetDoorStatusEnum (BACnetDoorStatus.h) - shared with Access Door / the Lift's
 // per-door Car_Door_Status and Landing_Door_Status arrays.
 static const uint32_t DOOR_STATUS_CLOSED = 0;
+static const uint32_t DOOR_STATUS_OPENED = 1;
 // BACnetLiftGroupModeEnum (BACnetLiftGroupMode.h)
 static const uint32_t LIFT_GROUP_MODE_NORMAL = 1;
 // BACnetEscalatorOperationDirectionEnum (BACnetEscalatorOperationDirection.h)
@@ -416,10 +438,6 @@ static const uint32_t MACHINE_ROOM_ID_INSTANCE = 1;      // "Turquoise"
 static const uint32_t MACHINE_ROOM_ID_VALUE = 100;        // an arbitrary plausible room id
 static const uint32_t LIFT_NUMBER_OF_DOORS = 1;            // this Lift has one door (index 1)
 
-// Simulated Lift state (a real device would read this from the elevator
-// controller's own bus). Car_Position is a floor number (1-based); the car sits
-// at floor 3, doors closed, not moving.
-static const uint8_t LIFT_CAR_POSITION = 3;
 static bool g_liftOutOfService = false;
 // The alarm source: Passenger_Alarm is not writable through any API in this
 // stack (a real installation drives it from hardware) - see the file header
@@ -430,21 +448,151 @@ static bool g_escalatorOutOfService = false;
 static bool g_escalatorPassengerAlarm = false;
 static bool g_escalatorPowerMode = true; // powered on
 
-// --- NEW vs B-EM: Elevator Group 1 "Maroon"'s Landing_Call_Control -----------
-// The one queued/commanded landing call this example remembers, so a read of
-// Landing_Call_Control (or Landing_Calls) after a WriteProperty reflects what was
-// last commanded. A real installation would forward the call to its elevator
-// controller instead of just remembering it. hasQueuedCall=false means "no call
-// commanded (or its door was answered) right now"; Landing_Call_Control then
-// reads as floor 0, direction none (see GetListElevatorGroupLandingCallStatus).
-struct QueuedLandingCall {
-    bool hasQueuedCall = false;
+// -----------------------------------------------------------------------------
+// SIMULATION: the elevator car behind Lift 1 "Mauve". NOT part of the BACnet
+// Surface - it stands in for the elevator machinery a real B-AEC drives over its
+// own bus, so the Profile Function ("performs control of elevators", L.13.1) can
+// be watched on the wire. The BACnet part is what a landing call does to it:
+//
+//   a WriteProperty of Elevator Group 1's Landing_Call_Control (cl. 12.58.10: "A
+//   write to this property is equivalent to a passenger pressing a call button at
+//   a landing") puts the call on the group's Landing_Calls list (12.58.9) and on
+//   the car's Assigned_Landing_Calls (12.59.11). The car then moves one floor per
+//   LIFT_MILLISECONDS_PER_FLOOR - Car_Position (12.59.14) counts the floors and
+//   Car_Moving_Direction (12.59.15) reads UP or DOWN - stops at every floor that
+//   has a call, opens its door (Car_Door_Status, 12.59.17) for
+//   LIFT_DOOR_DWELL_MILLISECONDS, which answers the call (it leaves both lists),
+//   and closes it again. Idle, the car is STOPPED with its door CLOSED.
+//
+// FAILURE MODE: a landing call for a floor this installation does not have
+// (outside LIFT_LOWEST_FLOOR..LIFT_HIGHEST_FLOOR), or one more than
+// MAX_LANDING_CALLS can hold, is refused - the WriteProperty answers an Error and
+// the car does not move (see SetElevatorGroupLandingCallControl).
+//
+// The calls are served first come, first served, stopping on the way at any
+// floor that also has a call. A real group dispatcher is far smarter; replace
+// this block with the interface to your elevator controller.
+// -----------------------------------------------------------------------------
+static const uint8_t LIFT_LOWEST_FLOOR = 1;
+static const uint8_t LIFT_HIGHEST_FLOOR = 10;
+static const uint8_t LIFT_START_FLOOR = 3;                  // where the car is at power-on
+static const uint32_t LIFT_MILLISECONDS_PER_FLOOR = 2000;  // travel time between adjacent floors
+static const uint32_t LIFT_DOOR_DWELL_MILLISECONDS = 3000; // how long the door stays open at a stop
+static const uint32_t MAX_LANDING_CALLS = 8;               // outstanding landing calls the group holds
+
+enum class LiftCarPhase { Idle, Moving, DoorOpen };
+
+struct LandingCall {
+    uint8_t floorNumber;
+    uint32_t direction; // BACnetLiftCarDirection UP or DOWN - the button the passenger pressed
+};
+
+struct LiftCar {
+    uint8_t position = LIFT_START_FLOOR;
+    uint32_t movingDirection = LIFT_CAR_DIRECTION_STOPPED;
+    uint32_t doorStatus = DOOR_STATUS_CLOSED;
+    LiftCarPhase phase = LiftCarPhase::Idle;
+    std::chrono::steady_clock::time_point phaseDeadline;
+    LandingCall calls[MAX_LANDING_CALLS] = {};
+    uint32_t callCount = 0;
+};
+static LiftCar g_liftCar;
+
+// --- Elevator Group 1 "Maroon"'s Landing_Call_Control -------------------------
+// The last landing call written to Landing_Call_Control, which a read of the
+// property returns (12.58.10 does not say what it reads back; the last command is
+// the useful answer). hasValue=false means nothing has been written since
+// power-on; Landing_Call_Control then reads as floor 0, direction none (see
+// GetListElevatorGroupLandingCallStatus).
+struct LastLandingCallControl {
+    bool hasValue = false;
     uint8_t floorNumber = 0;
     uint8_t commandChoice = 0;
     uint32_t direction = 0;
     uint8_t destination = 0;
 };
-static QueuedLandingCall g_queuedLandingCall;
+static LastLandingCallControl g_lastLandingCallControl;
+
+// Tell the stack a car property changed, so COV subscribers hear about it.
+static void LiftCarPropertyChanged(const uint32_t propertyIdentifier) {
+    BACnetStack_UpdateValue(g_deviceInstance, OBJECT_TYPE_LIFT, LIFT_INSTANCE, propertyIdentifier);
+}
+
+// The car is at a floor that has a call: stop, open the door, and answer every
+// call at this floor.
+static void LiftCarOpenDoor(const std::chrono::steady_clock::time_point now) {
+    uint32_t keptCalls = 0;
+    for (uint32_t callIndex = 0; callIndex < g_liftCar.callCount; ++callIndex) {
+        if (g_liftCar.calls[callIndex].floorNumber != g_liftCar.position) {
+            g_liftCar.calls[keptCalls++] = g_liftCar.calls[callIndex];
+        }
+    }
+    g_liftCar.callCount = keptCalls;
+    g_liftCar.movingDirection = LIFT_CAR_DIRECTION_STOPPED;
+    g_liftCar.doorStatus = DOOR_STATUS_OPENED;
+    g_liftCar.phase = LiftCarPhase::DoorOpen;
+    g_liftCar.phaseDeadline = now + std::chrono::milliseconds(LIFT_DOOR_DWELL_MILLISECONDS);
+    LiftCarPropertyChanged(PROPERTY_IDENTIFIER_CAR_MOVING_DIRECTION);
+    LiftCarPropertyChanged(PROPERTY_IDENTIFIER_CAR_DOOR_STATUS);
+    printf("Simulation: Lift 1 (Mauve) stopped at floor %u, door OPEN (%u call(s) still waiting)\n",
+           g_liftCar.position, g_liftCar.callCount);
+}
+
+static bool LiftCarHasCallAt(const uint8_t floorNumber) {
+    for (uint32_t callIndex = 0; callIndex < g_liftCar.callCount; ++callIndex) {
+        if (g_liftCar.calls[callIndex].floorNumber == floorNumber) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Called on every pass of the main loop: advance the car by the time that has passed.
+static void LiftCarTick() {
+    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    switch (g_liftCar.phase) {
+        case LiftCarPhase::Idle:
+            if (g_liftCar.callCount == 0) {
+                return;
+            }
+            if (LiftCarHasCallAt(g_liftCar.position)) {
+                LiftCarOpenDoor(now); // a call at the floor the car is already on
+                return;
+            }
+            g_liftCar.movingDirection = (g_liftCar.calls[0].floorNumber > g_liftCar.position)
+                                            ? LIFT_CAR_DIRECTION_UP : LIFT_CAR_DIRECTION_DOWN;
+            g_liftCar.phase = LiftCarPhase::Moving;
+            g_liftCar.phaseDeadline = now + std::chrono::milliseconds(LIFT_MILLISECONDS_PER_FLOOR);
+            LiftCarPropertyChanged(PROPERTY_IDENTIFIER_CAR_MOVING_DIRECTION);
+            printf("Simulation: Lift 1 (Mauve) leaves floor %u going %s for floor %u\n", g_liftCar.position,
+                   g_liftCar.movingDirection == LIFT_CAR_DIRECTION_UP ? "UP" : "DOWN",
+                   g_liftCar.calls[0].floorNumber);
+            return;
+        case LiftCarPhase::Moving:
+            if (now < g_liftCar.phaseDeadline) {
+                return;
+            }
+            g_liftCar.position = (uint8_t)(g_liftCar.movingDirection == LIFT_CAR_DIRECTION_UP
+                                               ? g_liftCar.position + 1 : g_liftCar.position - 1);
+            LiftCarPropertyChanged(PROPERTY_IDENTIFIER_CAR_POSITION);
+            printf("Simulation: Lift 1 (Mauve) at floor %u\n", g_liftCar.position);
+            if (LiftCarHasCallAt(g_liftCar.position)) {
+                LiftCarOpenDoor(now);
+            } else {
+                g_liftCar.phaseDeadline += std::chrono::milliseconds(LIFT_MILLISECONDS_PER_FLOOR);
+            }
+            return;
+        case LiftCarPhase::DoorOpen:
+            if (now < g_liftCar.phaseDeadline) {
+                return;
+            }
+            g_liftCar.doorStatus = DOOR_STATUS_CLOSED;
+            g_liftCar.phase = LiftCarPhase::Idle;
+            LiftCarPropertyChanged(PROPERTY_IDENTIFIER_CAR_DOOR_STATUS);
+            printf("Simulation: Lift 1 (Mauve) door CLOSED at floor %u\n", g_liftCar.position);
+            return;
+    }
+}
 
 // --- AE-N-I-B: Notification Class 1 "Crimson" routes Mauve's Passenger_Alarm --
 static const uint32_t NOTIFICATION_CLASS_INSTANCE = 1;     // "Crimson"
@@ -468,7 +616,30 @@ static uint8_t RECIPIENT_IP[4] = { 0, 0, 0, 0 };  // used when not broadcasting
 
 // How often (seconds of uptime) the simulated Passenger_Alarm condition flips.
 // A real device would drive g_liftPassengerAlarm from an actual alarm input.
+// TEST-ONLY HOOK: the environment variable BAEC_TEST_PASSENGER_ALARM_SECONDS=<n>
+// (1..3600) shortens the period so a Wire Test sees transitions in seconds. It is
+// not a command-line option and changes nothing a BACnet client can reach; see
+// tests/README.md.
 static const time_t PASSENGER_ALARM_SIMULATION_PERIOD_SECONDS = 30;
+static const char* const TEST_PASSENGER_ALARM_SECONDS_VARIABLE = "BAEC_TEST_PASSENGER_ALARM_SECONDS";
+static time_t g_passengerAlarmPeriodSeconds = PASSENGER_ALARM_SIMULATION_PERIOD_SECONDS;
+
+// An environment variable's value, or "" if it is not set.
+static std::string EnvironmentVariable(const char* name) {
+#if defined(_WIN32)
+    char* value = NULL;
+    size_t length = 0;
+    std::string result;
+    if (_dupenv_s(&value, &length, name) == 0 && value != NULL) {
+        result = value;
+    }
+    free(value);
+    return result;
+#else
+    const char* value = getenv(name);
+    return value != NULL ? std::string(value) : std::string();
+#endif
+}
 
 // -----------------------------------------------------------------------------
 // AE-EL-I-B (F-EVENTLOG, NEW vs B-EC): Event Log 1 "Beige". Pattern copied
@@ -686,7 +857,8 @@ bool GetPropertyEnumerated(const uint32_t deviceInstance, const uint16_t objectT
     if (objectType == OBJECT_TYPE_LIFT && objectInstance == LIFT_INSTANCE) {
         if (propertyIdentifier == PROPERTY_IDENTIFIER_CAR_MOVING_DIRECTION) {
             // Required, NO STACK DEFAULT - an unserved read fails value-not-initialized.
-            *value = LIFT_CAR_DIRECTION_UP;
+            // From the car Simulation: UP / DOWN while it travels, STOPPED otherwise.
+            *value = g_liftCar.movingDirection;
             return true;
         }
         if (propertyIdentifier == PROPERTY_IDENTIFIER_CAR_DOOR_STATUS &&
@@ -695,7 +867,8 @@ bool GetPropertyEnumerated(const uint32_t deviceInstance, const uint16_t objectT
             // "THE DOOR COUNT IS NOT STORED BY THE STACK" note in
             // CASBACnetStackDLL.h: the application alone owns the door count,
             // by simply answering only door indices it recognises).
-            *value = DOOR_STATUS_CLOSED;
+            // From the car Simulation: OPENED while it stands at a call, else CLOSED.
+            *value = g_liftCar.doorStatus;
             return true;
         }
     }
@@ -766,8 +939,8 @@ bool GetPropertyUnsignedInteger(const uint32_t deviceInstance, const uint16_t ob
     // --- F-ELEVATOR ----------------------------------------------------------
     if (objectType == OBJECT_TYPE_LIFT && objectInstance == LIFT_INSTANCE &&
         propertyIdentifier == PROPERTY_IDENTIFIER_CAR_POSITION) {
-        // Required, NO STACK DEFAULT.
-        *value = LIFT_CAR_POSITION;
+        // Required, NO STACK DEFAULT. The car Simulation's current floor.
+        *value = g_liftCar.position;
         return true;
     }
     // Every one of the Lift's per-door BACnetARRAY properties (required
@@ -1123,16 +1296,18 @@ bool GetListOfEnumerations(const uint32_t deviceInstance, const uint16_t objectT
 // supportLandingCallStatus was passed to AddElevatorGroupObject). The stack
 // calls this for both, telling them apart by propertyIdentifier:
 //
-//   Landing_Call_Control (NEW vs B-EM) is ONE BACnetLandingCallStatus, not a
-//   list, so it must always have a value: the call SetElevatorGroupLandingCallControl
-//   (below) last recorded, or - before any call, or after a COLDSTART - floor 0,
-//   direction none. Returning false here fails the read with READ_ACCESS_DENIED.
+//   Landing_Call_Control is ONE BACnetLandingCallStatus, not a list, so it must
+//   always have a value: the call SetElevatorGroupLandingCallControl (below) last
+//   accepted, or - before any call, or after a COLDSTART - floor 0, direction
+//   none. Returning false here fails the read with READ_ACCESS_DENIED.
 //
-//   Landing_Calls (the group's own queue, as opposed to what was just commanded)
-//   stays empty in this example. The callback's contract (BACnetCallbackInterface.h):
-//   return true only when it supplied an element, and false on the first call
-//   (rangeIndexOrSequence 0) for an EMPTY list. Returning true without an
-//   element is read as a malformed element and fails the read.
+//   Landing_Calls (12.58.9: "Each element of this list shall represent a
+//   currently active call") is the car Simulation's list of calls not yet
+//   answered, paged one element per call: rangeIndexOrSequence is the element
+//   index from 0. The callback's contract (BACnetCallbackInterface.h): return
+//   true only when it supplied an element, and false on the first call
+//   (rangeIndexOrSequence 0) for an EMPTY list. Returning true without an element
+//   is read as a malformed element and fails the read.
 bool GetListElevatorGroupLandingCallStatus(const uint32_t deviceInstance, const uint32_t elevatorGroupInstance,
                                            const uint32_t propertyIdentifier, const uint8_t rangeOption,
                                            const uint32_t rangeIndexOrSequence, uint8_t* floorNumber,
@@ -1141,7 +1316,6 @@ bool GetListElevatorGroupLandingCallStatus(const uint32_t deviceInstance, const 
                                            uint32_t* floorTextLength, const uint32_t floorTextMaxLength,
                                            bool* more) {
     (void)rangeOption;
-    (void)rangeIndexOrSequence; // one value or an empty list: no paging needed
     (void)floorText;
     (void)floorTextLength;
     (void)floorTextMaxLength;
@@ -1149,29 +1323,37 @@ bool GetListElevatorGroupLandingCallStatus(const uint32_t deviceInstance, const 
         *more = false;
         return false;
     }
+    *useFloorText = false;
     if (propertyIdentifier == PROPERTY_IDENTIFIER_LANDING_CALL_CONTROL) {
-        if (g_queuedLandingCall.hasQueuedCall) {
-            *floorNumber = g_queuedLandingCall.floorNumber;
-            *commandChoice = g_queuedLandingCall.commandChoice;
-            *bacnetLiftCarDirection = g_queuedLandingCall.direction;
-            *destination = g_queuedLandingCall.destination;
+        if (g_lastLandingCallControl.hasValue) {
+            *floorNumber = g_lastLandingCallControl.floorNumber;
+            *commandChoice = g_lastLandingCallControl.commandChoice;
+            *bacnetLiftCarDirection = g_lastLandingCallControl.direction;
+            *destination = g_lastLandingCallControl.destination;
         } else {
             *floorNumber = 0; // no call commanded yet
             *commandChoice = LANDING_CALL_COMMAND_DIRECTION;
             *bacnetLiftCarDirection = LIFT_CAR_DIRECTION_NONE;
             *destination = 0;
         }
-        *useFloorText = false;
         *more = false; // a single value, not a list
         return true;
     }
+    if (propertyIdentifier == PROPERTY_IDENTIFIER_LANDING_CALLS && rangeIndexOrSequence < g_liftCar.callCount) {
+        *floorNumber = g_liftCar.calls[rangeIndexOrSequence].floorNumber;
+        *commandChoice = LANDING_CALL_COMMAND_DIRECTION;
+        *bacnetLiftCarDirection = g_liftCar.calls[rangeIndexOrSequence].direction;
+        *destination = 0;
+        *more = rangeIndexOrSequence + 1 < g_liftCar.callCount;
+        return true;
+    }
     *more = false;
-    return false; // Landing_Calls: no landing calls outstanding right now - an empty list
+    return false; // past the last active call (or no calls at all: an empty list)
 }
 
 // AssignedLandingCalls (optional Lift property, enabled below) - the calls this
-// car has been assigned to answer. Report one, for demonstration: the car is
-// assigned to floor 5, direction up.
+// car has been assigned to answer (12.59.11). This example's group has one car,
+// so every active landing call is assigned to it: the car Simulation's list.
 bool GetSequenceLiftAssignedLandingCall(const uint32_t deviceInstance, const uint32_t objectInstance,
                                         const uint32_t arrayIndexForDoor, const uint32_t offset,
                                         uint8_t* floorNumber, uint32_t* direction, bool* more) {
@@ -1180,18 +1362,19 @@ bool GetSequenceLiftAssignedLandingCall(const uint32_t deviceInstance, const uin
         *more = false;
         return false;
     }
-    if (offset == 0) {
-        *floorNumber = 5;
-        *direction = LIFT_CAR_DIRECTION_UP;
-        *more = false; // exactly one assigned call
+    if (offset < g_liftCar.callCount) {
+        *floorNumber = g_liftCar.calls[offset].floorNumber;
+        *direction = g_liftCar.calls[offset].direction;
+        *more = offset + 1 < g_liftCar.callCount;
         return true;
     }
     *more = false;
-    return false;
+    return false; // past the last call (false at offset 0 = an empty list)
 }
 
 // RegisteredCarCall (optional Lift property, enabled below) - the floor(s) a
-// passenger has pressed inside the car. Report one, for demonstration: floor 5.
+// passenger has pressed inside the car (12.59.13). The car Simulation has no
+// passengers pressing buttons inside it, so the list is honestly empty.
 bool GetSequenceLiftRegisteredCarCall(const uint32_t deviceInstance, const uint32_t objectInstance,
                                       const uint32_t arrayIndexForDoor, const uint32_t offset,
                                       uint8_t* floorNumber, bool* more) {
@@ -1200,18 +1383,15 @@ bool GetSequenceLiftRegisteredCarCall(const uint32_t deviceInstance, const uint3
         *more = false;
         return false;
     }
-    if (offset == 0) {
-        *floorNumber = 5;
-        *more = false; // exactly one registered car call
-        return true;
-    }
+    (void)offset;
+    (void)floorNumber;
     *more = false;
-    return false;
+    return false; // false at offset 0 = an empty list
 }
 
 // LandingDoorStatus (optional Lift property, enabled below) - the door status at
-// each floor the car serves. Report one, for demonstration: floor 3 (where the
-// car currently sits), door closed.
+// each floor the car serves. Report the one landing door that moves in the car
+// Simulation: the one at the car's floor, which opens and closes with the car's.
 bool GetSequenceLiftLandingDoorStatus(const uint32_t deviceInstance, const uint32_t objectInstance,
                                       const uint32_t arrayIndexForDoor, const uint32_t offset,
                                       uint8_t* floorNumber, uint32_t* doorStatus, bool* more) {
@@ -1221,8 +1401,8 @@ bool GetSequenceLiftLandingDoorStatus(const uint32_t deviceInstance, const uint3
         return false;
     }
     if (offset == 0) {
-        *floorNumber = LIFT_CAR_POSITION;
-        *doorStatus = DOOR_STATUS_CLOSED;
+        *floorNumber = g_liftCar.position;
+        *doorStatus = g_liftCar.doorStatus;
         *more = false; // exactly one landing-door status entry reported
         return true;
     }
@@ -1236,10 +1416,14 @@ bool GetSequenceLiftLandingDoorStatus(const uint32_t deviceInstance, const uint3
 // Elevator Group has no Landing_Call_Control at all (see its file header).
 // Registering it here is what turns this device from a monitor into a
 // controller: the stack decodes the WriteProperty's BACnetLandingCallStatus
-// SEQUENCE and hands us the fields; we just remember the last one (a real
-// installation would forward it to the elevator controller's own bus). Reads of
-// Landing_Call_Control afterward come back through
-// GetListElevatorGroupLandingCallStatus above.
+// SEQUENCE and hands us the fields, and the call goes to the car Simulation
+// (section 1, "SIMULATION: the elevator car"), which answers it. A real
+// installation forwards it to the elevator controller's own bus here.
+//
+// Returning false refuses the write. This callback has no error-code
+// out-parameter, so the client gets the stack's generic answer for a declined
+// write (TODO.md has what it is at this pin), not the VALUE_OUT_OF_RANGE that
+// cl. 15.9.1.3.1 names for a value outside the property's range.
 // -----------------------------------------------------------------------------
 bool SetElevatorGroupLandingCallControl(const uint32_t deviceInstance, const uint32_t elevatorGroupInstance,
                                         const uint8_t floorNumber, const uint8_t commandChoice,
@@ -1252,13 +1436,53 @@ bool SetElevatorGroupLandingCallControl(const uint32_t deviceInstance, const uin
     if (deviceInstance != g_deviceInstance || elevatorGroupInstance != ELEVATOR_GROUP_INSTANCE) {
         return false;
     }
-    g_queuedLandingCall.hasQueuedCall = true;
-    g_queuedLandingCall.floorNumber = floorNumber;
-    g_queuedLandingCall.commandChoice = commandChoice;
-    g_queuedLandingCall.direction = bacnetLiftCarDirection;
-    g_queuedLandingCall.destination = destination;
-    printf("WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control <- floor %u, "
-           "direction %u, door %u\n", floorNumber, bacnetLiftCarDirection, destination);
+    // FAILURE MODE: a landing this installation does not have.
+    if (floorNumber < LIFT_LOWEST_FLOOR || floorNumber > LIFT_HIGHEST_FLOOR) {
+        printf("WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - floor %u is not "
+               "served (floors %u..%u)\n", floorNumber, LIFT_LOWEST_FLOOR, LIFT_HIGHEST_FLOOR);
+        return false;
+    }
+    // The button the passenger pressed: a direction call says it; a destination
+    // call (a destination-dispatch keypad) implies it.
+    uint32_t callDirection = bacnetLiftCarDirection;
+    if (commandChoice == LANDING_CALL_COMMAND_DESTINATION) {
+        if (destination < LIFT_LOWEST_FLOOR || destination > LIFT_HIGHEST_FLOOR || destination == floorNumber) {
+            printf("WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - destination %u "
+                   "is not a floor this car can take a passenger to from floor %u\n", destination, floorNumber);
+            return false;
+        }
+        callDirection = destination > floorNumber ? LIFT_CAR_DIRECTION_UP : LIFT_CAR_DIRECTION_DOWN;
+    } else if (callDirection != LIFT_CAR_DIRECTION_UP && callDirection != LIFT_CAR_DIRECTION_DOWN) {
+        printf("WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - direction %u is not "
+               "a landing call button (up %u or down %u)\n", callDirection, LIFT_CAR_DIRECTION_UP,
+               LIFT_CAR_DIRECTION_DOWN);
+        return false;
+    }
+    // The same button pressed twice is one call.
+    bool alreadyCalled = false;
+    for (uint32_t callIndex = 0; callIndex < g_liftCar.callCount; ++callIndex) {
+        if (g_liftCar.calls[callIndex].floorNumber == floorNumber &&
+            g_liftCar.calls[callIndex].direction == callDirection) {
+            alreadyCalled = true;
+        }
+    }
+    if (!alreadyCalled) {
+        if (g_liftCar.callCount >= MAX_LANDING_CALLS) {
+            printf("WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - %u calls already "
+                   "waiting\n", MAX_LANDING_CALLS);
+            return false;
+        }
+        g_liftCar.calls[g_liftCar.callCount].floorNumber = floorNumber;
+        g_liftCar.calls[g_liftCar.callCount].direction = callDirection;
+        g_liftCar.callCount++;
+    }
+    g_lastLandingCallControl.hasValue = true;
+    g_lastLandingCallControl.floorNumber = floorNumber;
+    g_lastLandingCallControl.commandChoice = commandChoice;
+    g_lastLandingCallControl.direction = bacnetLiftCarDirection;
+    g_lastLandingCallControl.destination = destination;
+    printf("WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control <- floor %u %s (%u call(s) waiting)\n",
+           floorNumber, callDirection == LIFT_CAR_DIRECTION_UP ? "UP" : "DOWN", g_liftCar.callCount);
     return true;
 }
 
@@ -1275,7 +1499,7 @@ bool SetElevatorGroupLandingCallControl(const uint32_t deviceInstance, const uin
 // of plain "disable". PasswordAccepted (below) is shared with ReinitializeDevice.
 // -----------------------------------------------------------------------------
 static bool PasswordAccepted(const char* password, uint32_t passwordLength) {
-    const uint32_t requiredLength = (uint32_t)strlen(DCC_PASSWORD);
+    const uint32_t requiredLength = (uint32_t)strlen(g_dccPassword);
     if (requiredLength == 0) {
         return true; // no password required
     }
@@ -1284,7 +1508,7 @@ static bool PasswordAccepted(const char* password, uint32_t passwordLength) {
     }
     unsigned diff = 0;
     for (uint32_t i = 0; i < requiredLength; ++i) {
-        diff |= (unsigned)((unsigned char)password[i] ^ (unsigned char)DCC_PASSWORD[i]);
+        diff |= (unsigned)((unsigned char)password[i] ^ (unsigned char)g_dccPassword[i]);
     }
     return diff == 0;
 }
@@ -1298,22 +1522,10 @@ bool DeviceCommunicationControl(const uint32_t deviceInstance, const uint8_t ena
         return false;
     }
 
-    const size_t requiredLength = strlen(DCC_PASSWORD);
-    if (requiredLength > 0) {
-        bool matches = (password != NULL) && (passwordLength == requiredLength);
-        if (matches) {
-            for (size_t i = 0; i < requiredLength; ++i) {
-                if (password[i] != DCC_PASSWORD[i]) {
-                    matches = false;
-                    break;
-                }
-            }
-        }
-        if (!matches) {
-            printf("DeviceCommunicationControl: REJECTED (password failure)\n");
-            *errorCode = ERROR_CODE_PASSWORD_FAILURE;
-            return false;
-        }
+    if (!PasswordAccepted(password, passwordLength)) {
+        printf("DeviceCommunicationControl: REJECTED (password failure)\n");
+        *errorCode = ERROR_CODE_PASSWORD_FAILURE;
+        return false;
     }
 
     const char* action = (enableDisable == DCC_ENABLE) ? "enable (resume communication)" :
@@ -1505,33 +1717,47 @@ bool SetPropertyNull(const uint32_t deviceInstance, const uint16_t objectType,
 }
 
 // -----------------------------------------------------------------------------
-// 2f. F-TIMESYNC (canonical in B-LD-CPP, copied here verbatim) - TimeSynchronization
-// (DM-TS-B). ONLY TimeSynchronization is registered below (SERVICE_TIME_SYNCHRONIZATION
-// in main()) - NOT UTCTimeSynchronization; this profile allows DM-TS-B *or* DM-UTC-B,
-// and this example does local time only (see B-LD's main.cpp for the wire-tested
-// rationale). Local_Date / Local_Time are served from g_syncedDateTime, seeded from
-// the host clock at start-up so a read before any sync still succeeds.
+// 2f. F-TIMESYNC - TimeSynchronization (DM-TS-B). ONLY TimeSynchronization is
+// enabled (SERVICE_TIME_SYNCHRONIZATION in main()) - NOT UTCTimeSynchronization;
+// this profile allows DM-TS-B *or* DM-UTC-B, and this example does local time only.
+//
+// The device's clock. Local_Date and Local_Time (Device properties 56 and 57) are
+// this device's local clock: the host's wall clock plus g_clockOffsetSeconds, the
+// correction the last TimeSynchronization applied (SetSystemTime below). The
+// application must serve both - the stack does not invent them - and the stack's
+// Schedule engine evaluates against these two properties: serve a clock that does
+// not move and Schedule 1 never reaches its next transition (L.13.1: "Ability to
+// synchronize its internal clock upon request" and "Ability to schedule internal
+// values, based on date and time" are one feature here). The pattern is
+// B-AAC-CPP's. A real device would set its RTC instead of keeping an offset.
 // -----------------------------------------------------------------------------
 struct SyncedDateTime {
     bool valid = false;
     uint8_t yearMinus1900 = 0, month = 1, day = 1, weekday = 1;
     uint8_t hour = 0, minute = 0, second = 0, hundredthSecond = 0;
 };
-static SyncedDateTime g_syncedDateTime;
+static time_t g_clockOffsetSeconds = 0;
 
 // DM-BR-B: Ivory (File 1)'s Modification_Date (BACnetDateTime, required, no
-// stack default) - when the file's content last changed: stamped at start-up
-// (the content is created empty) and again by every WriteFile below.
+// stack default) - when the file's content last changed, on the device clock:
+// stamped at start-up (the content is created empty), by every WriteFile, and
+// when a backup writes the configuration image into it.
 static SyncedDateTime g_fileModificationDate;
 
-static void ReadHostDateTime(SyncedDateTime* stamp) {
-    const time_t now = time(NULL);
-    struct tm parts;
+static bool GetDeviceLocalTm(struct tm* deviceLocalTm) {
+    const time_t deviceNow = time(NULL) + g_clockOffsetSeconds;
 #if defined(_WIN32)
-    localtime_s(&parts, &now);
+    return localtime_s(deviceLocalTm, &deviceNow) == 0;
 #else
-    localtime_r(&now, &parts);
+    return localtime_r(&deviceNow, deviceLocalTm) != NULL;
 #endif
+}
+
+static void ReadDeviceDateTime(SyncedDateTime* stamp) {
+    struct tm parts;
+    if (!GetDeviceLocalTm(&parts)) {
+        return;
+    }
     stamp->yearMinus1900 = (uint8_t)parts.tm_year;
     stamp->month = (uint8_t)(parts.tm_mon + 1);
     stamp->day = (uint8_t)parts.tm_mday;
@@ -1544,27 +1770,44 @@ static void ReadHostDateTime(SyncedDateTime* stamp) {
     stamp->valid = true;
 }
 
-static void InitSyncedDateTimeFromHost() {
-    ReadHostDateTime(&g_syncedDateTime);
-}
-
+// SetSystemTime: the stack executes TimeSynchronization and calls this so the
+// application can set its clock. Local_Date / Local_Time, and with them Schedule
+// 1 "Saffron", follow the synchronised time from the next read or tick - and keep
+// running from there, because the offset rides on the host's clock.
 bool SetSystemTime(const uint32_t deviceInstance, const uint8_t year, const uint8_t month,
                    const uint8_t day, const uint8_t weekday, const uint8_t hour,
                    const uint8_t minute, const uint8_t second, const uint8_t hundrethSeconds) {
+    (void)weekday;
+    (void)hundrethSeconds;
     if (deviceInstance != g_deviceInstance) {
         return false;
     }
-    g_syncedDateTime.yearMinus1900 = year;
-    g_syncedDateTime.month = month;
-    g_syncedDateTime.day = day;
-    g_syncedDateTime.weekday = weekday;
-    g_syncedDateTime.hour = hour;
-    g_syncedDateTime.minute = minute;
-    g_syncedDateTime.second = second;
-    g_syncedDateTime.hundredthSecond = hundrethSeconds;
-    g_syncedDateTime.valid = true;
-    printf("TimeSynchronization: %u-%02u-%02u %02u:%02u:%02u (Local_Date/Local_Time now read this back)\n",
-           (unsigned)(1900 + year), month, day, hour, minute, second);
+    // A time sync names one specific moment; a wildcard (255) field cannot set a clock.
+    const uint8_t UNSPECIFIED = 255;
+    if (year == UNSPECIFIED || month == UNSPECIFIED || day == UNSPECIFIED ||
+        hour == UNSPECIFIED || minute == UNSPECIFIED || second == UNSPECIFIED) {
+        printf("TimeSynchronization: ignored - the date or time has an unspecified field\n");
+        return false;
+    }
+    // BACnet dates count years from 1900 (year value 0 == 1900), as struct tm does.
+    struct tm requestedTm;
+    memset(&requestedTm, 0, sizeof(requestedTm));
+    requestedTm.tm_year = year;
+    requestedTm.tm_mon = month - 1;
+    requestedTm.tm_mday = day;
+    requestedTm.tm_hour = hour;
+    requestedTm.tm_min = minute;
+    requestedTm.tm_sec = second;
+    requestedTm.tm_isdst = -1; // let the C library decide whether DST applies
+    const time_t requestedTime = mktime(&requestedTm);
+    if (requestedTime == (time_t)-1) {
+        printf("TimeSynchronization: ignored - %04u-%02u-%02u %02u:%02u:%02u is not a valid local time\n",
+               1900u + year, month, day, hour, minute, second);
+        return false;
+    }
+    g_clockOffsetSeconds = requestedTime - time(NULL);
+    printf("TimeSynchronization: %04u-%02u-%02u %02u:%02u:%02u (device clock is now %lld s from the host clock)\n",
+           1900u + year, month, day, hour, minute, second, (long long)g_clockOffsetSeconds);
     return true;
 }
 
@@ -1585,14 +1828,18 @@ bool GetPropertyDate(const uint32_t deviceInstance, const uint16_t objectType,
         return true;
     }
     if (deviceInstance != g_deviceInstance || objectType != OBJECT_TYPE_DEVICE ||
-        objectInstance != g_deviceInstance ||
-        propertyIdentifier != PROPERTY_IDENTIFIER_LOCAL_DATE || !g_syncedDateTime.valid) {
+        objectInstance != g_deviceInstance || propertyIdentifier != PROPERTY_IDENTIFIER_LOCAL_DATE) {
         return false;
     }
-    *yearMinus1900 = g_syncedDateTime.yearMinus1900;
-    *month = g_syncedDateTime.month;
-    *day = g_syncedDateTime.day;
-    *weekday = g_syncedDateTime.weekday;
+    SyncedDateTime deviceNow;
+    ReadDeviceDateTime(&deviceNow);
+    if (!deviceNow.valid) {
+        return false;
+    }
+    *yearMinus1900 = deviceNow.yearMinus1900;
+    *month = deviceNow.month;
+    *day = deviceNow.day;
+    *weekday = deviceNow.weekday;
     return true;
 }
 
@@ -1613,14 +1860,18 @@ bool GetPropertyTime(const uint32_t deviceInstance, const uint16_t objectType,
         return true;
     }
     if (deviceInstance != g_deviceInstance || objectType != OBJECT_TYPE_DEVICE ||
-        objectInstance != g_deviceInstance ||
-        propertyIdentifier != PROPERTY_IDENTIFIER_LOCAL_TIME || !g_syncedDateTime.valid) {
+        objectInstance != g_deviceInstance || propertyIdentifier != PROPERTY_IDENTIFIER_LOCAL_TIME) {
         return false;
     }
-    *hour = g_syncedDateTime.hour;
-    *minute = g_syncedDateTime.minute;
-    *second = g_syncedDateTime.second;
-    *hundredthSecond = g_syncedDateTime.hundredthSecond;
+    SyncedDateTime deviceNow;
+    ReadDeviceDateTime(&deviceNow);
+    if (!deviceNow.valid) {
+        return false;
+    }
+    *hour = deviceNow.hour;
+    *minute = deviceNow.minute;
+    *second = deviceNow.second;
+    *hundredthSecond = 0;
     return true;
 }
 
@@ -1726,17 +1977,146 @@ bool WriteFile(const uint32_t deviceInstance, const uint32_t fileInstance, const
         g_fileDataLength = start + fileDataLength;
     }
     *ackFileStart = (int32_t)start;
-    ReadHostDateTime(&g_fileModificationDate);
+    ReadDeviceDateTime(&g_fileModificationDate);
     printf("WriteFile: Ivory <- %u byte(s) at offset %d\n", fileDataLength, (int)start);
     return true;
+}
+
+// THE CONFIGURATION IMAGE (DM-BR-B, L.13.1: "Ability to upload its configuration
+// and allow it to be subsequently restored"). What this device holds that another
+// device configured is the set of Analog Values a client created (DM-OCD-B) and
+// their Present_Values - the parameters an operator added. A backup writes them
+// into File 1 "Ivory" as text, one line per object after a header line:
+//
+//     B-AEC configuration 1
+//     analog-value 100 42.5
+//
+// and a restore puts the device back to exactly that set: values written back,
+// objects created since the backup deleted, objects deleted since recreated.
+// Text keeps the image readable in any BACnet tool's file viewer; a real product
+// would use a versioned binary format with a checksum.
+static const char* const CONFIGURATION_IMAGE_HEADER = "B-AEC configuration 1\n";
+static const char* const CONFIGURATION_IMAGE_ANALOG_VALUE = "analog-value";
+
+// A restore is parsed in CompleteRestore (inside Tick) and applied by the main
+// loop right after Tick returns, because applying it adds and removes objects and
+// that is not done from inside one of the stack's own callbacks.
+struct RestoredAnalogValue {
+    uint32_t objectInstance;
+    float presentValue;
+};
+static RestoredAnalogValue g_restoredAnalogValues[MAX_CREATED_ANALOG_VALUES];
+static uint32_t g_restoredAnalogValueCount = 0;
+static bool g_restorePending = false;
+
+static void BuildConfigurationImage() {
+    uint32_t length = 0;
+    length += (uint32_t)snprintf((char*)g_fileData + length, FILE_MAX_SIZE - length, "%s", CONFIGURATION_IMAGE_HEADER);
+    for (uint32_t slotIndex = 0; slotIndex < MAX_CREATED_ANALOG_VALUES; ++slotIndex) {
+        const CreatedAnalogValue& createdValue = g_createdAnalogValues[slotIndex];
+        if (createdValue.inUse && length < FILE_MAX_SIZE) {
+            length += (uint32_t)snprintf((char*)g_fileData + length, FILE_MAX_SIZE - length, "%s %u %.6g\n",
+                                         CONFIGURATION_IMAGE_ANALOG_VALUE, createdValue.objectInstance,
+                                         createdValue.presentValue);
+        }
+    }
+    g_fileDataLength = length < FILE_MAX_SIZE ? length : FILE_MAX_SIZE;
+    ReadDeviceDateTime(&g_fileModificationDate);
+}
+
+// Parse Ivory's content into g_restoredAnalogValues. False (and nothing staged)
+// if it is not an image this device wrote.
+static bool ParseConfigurationImage() {
+    const std::string image((const char*)g_fileData, g_fileDataLength);
+    const size_t headerLength = strlen(CONFIGURATION_IMAGE_HEADER);
+    if (image.compare(0, headerLength, CONFIGURATION_IMAGE_HEADER) != 0) {
+        printf("CompleteRestore: REJECTED - Ivory does not hold a B-AEC configuration image\n");
+        return false;
+    }
+    uint32_t parsedCount = 0;
+    size_t lineStart = headerLength;
+    while (lineStart < image.size()) {
+        size_t lineEnd = image.find('\n', lineStart);
+        if (lineEnd == std::string::npos) {
+            lineEnd = image.size();
+        }
+        const std::string line = image.substr(lineStart, lineEnd - lineStart);
+        lineStart = lineEnd + 1;
+        if (line.empty()) {
+            continue;
+        }
+        const size_t typeLength = strlen(CONFIGURATION_IMAGE_ANALOG_VALUE);
+        if (line.compare(0, typeLength, CONFIGURATION_IMAGE_ANALOG_VALUE) != 0 || parsedCount >= MAX_CREATED_ANALOG_VALUES) {
+            printf("CompleteRestore: REJECTED - unreadable image line \"%s\"\n", line.c_str());
+            return false;
+        }
+        const char* instanceText = line.c_str() + typeLength;
+        char* parseEnd = NULL;
+        const unsigned long parsedInstance = strtoul(instanceText, &parseEnd, 10);
+        const char* valueText = parseEnd;
+        const double parsedValue = strtod(valueText, &parseEnd);
+        if (valueText == instanceText || parseEnd == valueText || *parseEnd != '\0' || parsedInstance > 4194302) {
+            printf("CompleteRestore: REJECTED - unreadable image line \"%s\"\n", line.c_str());
+            return false;
+        }
+        g_restoredAnalogValues[parsedCount].objectInstance = (uint32_t)parsedInstance;
+        g_restoredAnalogValues[parsedCount].presentValue = (float)parsedValue;
+        parsedCount++;
+    }
+    g_restoredAnalogValueCount = parsedCount;
+    return true;
+}
+
+// Called from the main loop after a successful restore: make the created Analog
+// Values exactly the restored set.
+static void ApplyRestoredConfiguration() {
+    // Delete what the image does not have.
+    for (uint32_t slotIndex = 0; slotIndex < MAX_CREATED_ANALOG_VALUES; ++slotIndex) {
+        CreatedAnalogValue& createdValue = g_createdAnalogValues[slotIndex];
+        if (!createdValue.inUse) {
+            continue;
+        }
+        bool inImage = false;
+        for (uint32_t restoredIndex = 0; restoredIndex < g_restoredAnalogValueCount; ++restoredIndex) {
+            inImage = inImage || g_restoredAnalogValues[restoredIndex].objectInstance == createdValue.objectInstance;
+        }
+        if (!inImage) {
+            BACnetStack_RemoveObject(g_deviceInstance, OBJECT_TYPE_ANALOG_VALUE, createdValue.objectInstance);
+            printf("Restore: removed Analog Value %u (created after the backup)\n", createdValue.objectInstance);
+            createdValue.inUse = false;
+        }
+    }
+    // Recreate what is missing, and put every value back.
+    for (uint32_t restoredIndex = 0; restoredIndex < g_restoredAnalogValueCount; ++restoredIndex) {
+        const RestoredAnalogValue& restoredValue = g_restoredAnalogValues[restoredIndex];
+        CreatedAnalogValue* createdValue = FindCreatedAnalogValue(restoredValue.objectInstance);
+        if (createdValue == NULL) {
+            createdValue = FindFreeAnalogValueSlot();
+            if (createdValue == NULL ||
+                !BACnetStack_AddObject(g_deviceInstance, OBJECT_TYPE_ANALOG_VALUE, restoredValue.objectInstance)) {
+                printf("Restore: could not recreate Analog Value %u\n", restoredValue.objectInstance);
+                continue;
+            }
+            createdValue->inUse = true;
+            createdValue->objectInstance = restoredValue.objectInstance;
+            printf("Restore: recreated Analog Value %u\n", restoredValue.objectInstance);
+        }
+        createdValue->presentValue = restoredValue.presentValue;
+        BACnetStack_UpdateValue(g_deviceInstance, OBJECT_TYPE_ANALOG_VALUE, restoredValue.objectInstance,
+                                PROPERTY_IDENTIFIER_PRESENT_VALUE);
+        printf("Restore: Analog Value %u Present_Value <- %.6g\n", restoredValue.objectInstance,
+               restoredValue.presentValue);
+    }
 }
 
 bool PrepareBackup(const uint32_t deviceInstance) {
     if (deviceInstance != g_deviceInstance) {
         return false;
     }
-    printf("PrepareBackup: staging Ivory's %u byte(s) for AtomicReadFile\n", g_fileDataLength);
-    return true; // the demo payload (g_fileData) is already live; nothing more to stage
+    BuildConfigurationImage();
+    printf("PrepareBackup: wrote the configuration image into Ivory (%u byte(s)) for AtomicReadFile\n",
+           g_fileDataLength);
+    return true;
 }
 bool CompleteBackup(const uint32_t deviceInstance) {
     if (deviceInstance != g_deviceInstance) {
@@ -1749,15 +2129,26 @@ bool PrepareRestore(const uint32_t deviceInstance) {
     if (deviceInstance != g_deviceInstance) {
         return false;
     }
-    printf("PrepareRestore: ready to accept AtomicWriteFile into Ivory\n");
+    // The client writes the whole image from offset 0; start from an empty file
+    // so a shorter image cannot leave the old one's tail behind.
+    g_fileDataLength = 0;
+    printf("PrepareRestore: ready to accept the configuration image into Ivory (AtomicWriteFile)\n");
     return true;
 }
 bool CompleteRestore(const uint32_t deviceInstance, const bool wasAborted) {
     if (deviceInstance != g_deviceInstance) {
         return false;
     }
-    printf("CompleteRestore: restore session ended (wasAborted=%s), Ivory now %u byte(s)\n",
-           wasAborted ? "true" : "false", g_fileDataLength);
+    if (wasAborted) {
+        printf("CompleteRestore: restore aborted - the configuration is unchanged\n");
+        return true;
+    }
+    if (!ParseConfigurationImage()) {
+        return false; // the stack records no Last_Restore_Time; the configuration is unchanged
+    }
+    g_restorePending = true;
+    printf("CompleteRestore: configuration image accepted (%u Analog Value(s)); applying it\n",
+           g_restoredAnalogValueCount);
     return true;
 }
 
@@ -1880,7 +2271,13 @@ int main(int argc, char** argv) {
     }
     const uint16_t port = CASExampleHelper::ParsePortArg(argc, argv, 47808);
     g_deviceInstance = CASExampleHelper::ParseDeviceIdArg(argc, argv, g_deviceInstance);
+    g_dccPassword = CASExampleHelper::ParseDccPasswordArg(argc, argv, DEFAULT_DCC_PASSWORD);
     CASExampleHelper::PrintVersion(APP_NAME, APP_VERSION);
+    if (g_dccPassword[0] != '\0') {
+        // Say THAT a password is set, never what it is.
+        printf("FYI: DeviceCommunicationControl and ReinitializeDevice (including backup/restore) "
+               "require a password (--dcc-password).\n");
+    }
 
     // --- Bind the BACnet/IP socket -----------------------------------------
     if (!CASExampleHelper::SetupUDP(port)) {
@@ -1894,10 +2291,8 @@ int main(int argc, char** argv) {
                "will report 0.0.0.0.\n");
     }
 
-    // F-TIMESYNC: seed Local_Date/Local_Time from the host clock so they read
-    // back something valid even before any TimeSynchronization arrives.
-    InitSyncedDateTimeFromHost();
-    ReadHostDateTime(&g_fileModificationDate); // Ivory's content is created (empty) now
+    // F-TIMESYNC: the device clock starts on the host clock (g_clockOffsetSeconds 0).
+    ReadDeviceDateTime(&g_fileModificationDate); // Ivory's content is created (empty) now
 
     // --- Register callbacks -------------------------------------------------
     CASExampleHelper::SetNetworkPortInstance(NETWORK_PORT_INSTANCE);
@@ -2360,17 +2755,42 @@ int main(int argc, char** argv) {
            "'d' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.\n",
            g_deviceInstance, DEVICE_NAME, VENDOR_IDENTIFIER);
 
+    {
+        const std::string testAlarmSeconds = EnvironmentVariable(TEST_PASSENGER_ALARM_SECONDS_VARIABLE);
+        if (!testAlarmSeconds.empty()) {
+            char* parseEnd = NULL;
+            const unsigned long parsedSeconds = strtoul(testAlarmSeconds.c_str(), &parseEnd, 10);
+            if (parseEnd != NULL && *parseEnd == '\0' && parsedSeconds >= 1 && parsedSeconds <= 3600) {
+                g_passengerAlarmPeriodSeconds = (time_t)parsedSeconds;
+                printf("FYI: TEST HOOK %s - the simulated Passenger_Alarm flips every %lu s.\n",
+                       TEST_PASSENGER_ALARM_SECONDS_VARIABLE, parsedSeconds);
+            } else {
+                printf("FYI: ignored %s=%s (expected 1..3600).\n", TEST_PASSENGER_ALARM_SECONDS_VARIABLE,
+                       testAlarmSeconds.c_str());
+            }
+        }
+    }
+
     // --- Run the stack ------------------------------------------------------
     time_t lastAlarmToggle = time(NULL);
     bool running = true;
     while (running) {
         BACnetStack_Tick();
 
+        // --- DM-BR-B: apply a restored configuration image ------------------
+        if (g_restorePending) {
+            g_restorePending = false;
+            ApplyRestoredConfiguration();
+        }
+
+        // --- SIMULATION: move the elevator car toward its landing calls ------
+        LiftCarTick();
+
         // --- AE-N-I-B demo: flip the simulated Passenger_Alarm every 30 s ----
         // No write, no key - a controller still just reports what the
         // (simulated) elevator hardware is doing here, on its own schedule.
         time_t now = time(NULL);
-        if (now - lastAlarmToggle >= PASSENGER_ALARM_SIMULATION_PERIOD_SECONDS) {
+        if (now - lastAlarmToggle >= g_passengerAlarmPeriodSeconds) {
             g_liftPassengerAlarm = !g_liftPassengerAlarm;
             lastAlarmToggle = now;
             BACnetStack_UpdateValue(g_deviceInstance, OBJECT_TYPE_LIFT, LIFT_INSTANCE,
@@ -2402,7 +2822,8 @@ int main(int argc, char** argv) {
                 g_escalatorOutOfService = false;
                 g_escalatorPassengerAlarm = false;
                 g_escalatorPowerMode = true;
-                g_queuedLandingCall = QueuedLandingCall();
+                g_liftCar = LiftCar();
+                g_lastLandingCallControl = LastLandingCallControl();
             } else {
                 printf("Restart: WARMSTART - re-initializing, keeping commanded values.\n");
             }
@@ -2442,18 +2863,17 @@ int main(int argc, char** argv) {
                 // SCHED-I-B demo (claimed by B-AAC, docs/menu-keys.md; NEW vs B-EC):
                 // add a Weekly_Schedule transition for RIGHT NOW (today, current
                 // h:m:s) instead of waiting for the pre-seeded Monday 08:00 entry.
-                // The schedule engine evaluates Weekly_Schedule against wall-clock
-                // time on every tick, so once this entry exists it is immediately
+                // The schedule engine evaluates Weekly_Schedule against the device
+                // clock on every tick, so once this entry exists it is immediately
                 // the latest transition today and Chartreuse (Analog Output 1)
                 // moves to SCHEDULE_DEMO_VALUE at SCHEDULE_WRITE_PRIORITY on the
                 // next tick.
-                time_t demoAdvanceNow = time(NULL);
+                // The DEVICE clock (Local_Date/Local_Time), which a TimeSynchronization
+                // may have moved away from the host's.
                 struct tm nowTm;
-#if defined(_WIN32)
-                localtime_s(&nowTm, &demoAdvanceNow);
-#else
-                localtime_r(&demoAdvanceNow, &nowTm);
-#endif
+                if (!GetDeviceLocalTm(&nowTm)) {
+                    break;
+                }
                 // BACnetDailySchedule day order is 0=Monday..6=Sunday; tm_wday is
                 // 0=Sunday..6=Saturday, so shift it.
                 const uint8_t dayOffset = (uint8_t)((nowTm.tm_wday + 6) % 7);

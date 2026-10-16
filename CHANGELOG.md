@@ -2,6 +2,59 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.0] - unreleased
+
+The example now performs the B-AEC Profile Function - "A B-AEC device performs
+control of elevators. It supports the modification and commanding of its
+elevator objects by another device." (ANSI/ASHRAE 135-2024 L.13.1) - and proves
+it, with the rest of L.13.1, in Wire Tests against a Python Peer (the series'
+Profile-functional bar, `docs/GLOSSARY.md` in the example series).
+
+### Added
+
+- **The elevator moves.** An elevator car Simulation (labelled `SIMULATION` in
+  `main.cpp` and README "What is Simulation") answers a landing call written to
+  Elevator Group 1's `Landing_Call_Control`: the call is listed in
+  `Landing_Calls` and Lift 1's `Assigned_Landing_Calls`, the car travels a floor
+  every 2 s (`Car_Position`, `Car_Moving_Direction` UP / DOWN), stops with the
+  door `opened` (`Car_Door_Status`, `Landing_Door_Status`), answers the call and
+  closes the door. Before, the call was only stored and the car stood at floor 3
+  with constant doors and direction (`Car_Moving_Direction` read UP while
+  standing still). **Failure Mode:** a call for a floor outside 1-10, a
+  direction that is not up/down, a destination call to nowhere, or a ninth
+  waiting call is refused, and the car does not move.
+- **A running device clock.** `Local_Date` / `Local_Time` are the host clock
+  plus the offset the last TimeSynchronization set (B-AAC-CPP's pattern).
+  Before, a sync froze them at the synchronised moment, so Schedule 1 could
+  never reach its next transition after a sync. The `s` key now adds its
+  transition on the device clock.
+- **DM-BR-B backs up and restores the configuration.** A backup writes the
+  created Analog Values and their values into File 1 as a text image; a
+  restore makes the set exactly the backed-up one again (values written back,
+  later objects deleted, deleted ones recreated) and refuses a file that is not
+  an image. Before, File 1 held whatever was last written to it and a restore
+  restored nothing.
+- **`--dcc-password`** is honoured (`CASExampleHelper::ParseDccPasswordArg`, as
+  B-AAC-CPP): DeviceCommunicationControl and ReinitializeDevice, including the
+  backup/restore states, require it when set. Before, the password was a
+  compile-time constant `""` and `--help` advertised an option that did nothing.
+- **Test-only hook** `BAEC_TEST_PASSENGER_ALARM_SECONDS=<n>` (environment
+  variable, 1..3600) shortens the simulated Passenger_Alarm period.
+- **Wire Tests**: `tests/elevator_test.py` (18 checks), `tests/object_test.py`
+  (21), `tests/schedule_test.py` (9), `tests/event_log_test.py` (12),
+  `tests/backup_restore_test.py` (23), alongside `discovery_test.py` (24);
+  `tests/aec_setup.py`, `tests/aec_services.py`. Four `[KNOWN GAP]` lines:
+  stack #3301, #3957, and the landing-call callback's missing error code (twice)
+  - TODO.md. Windows STATIC 107/107 x3, Linux SOURCE 107/107 x3; every feature
+  mutation-verified (tests/README.md).
+
+### Changed
+
+- Lift 1 `Registered_Car_Call` is now an empty list and `Assigned_Landing_Calls`
+  / `Landing_Door_Status` come from the Simulation; they were fixed demo values
+  (floor 5) that contradicted a car that moves.
+- Wire Tests run on UDP 48040 by default (was 47863).
+
 ## [1.1.0] - unreleased
 
 ### Fixed

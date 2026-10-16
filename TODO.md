@@ -3,9 +3,12 @@
 Stack pin: `64b2cfac5` (6.x, 2026-10-15, reports 6.0.23). Re-checked 2026-10-15
 when the pin moved from `abd4cee1` (6.0.21).
 
-This example is **BIBB-conformant, not yet Profile-functional** (series
-`docs/GLOSSARY.md`): the elevator does not move, and only discovery is a Wire
-Test. That work is the example's own scope, not blocked on the stack.
+This example is **Profile-functional** (series `docs/GLOSSARY.md`) as of 1.2.0:
+a landing call moves the car Simulation, and CreateObject/DeleteObject, the
+Schedule over TimeSynchronization, the Event Log over ReadRange and
+backup/restore are Wire Tests with their Failure Modes (`tests/README.md`).
+Items 2-4 below are `[KNOWN GAP]` lines in a Wire Test: reported on every run,
+not counted as a failure, outside this example's scope.
 
 ## Stack defects found at this pin
 
@@ -18,6 +21,8 @@ property is present. A ReadProperty of 322 correctly answers unknown-property.
 ### 2. No customer way to start an Event Log enabled
 
 Already filed: [#3301](https://github.com/chipkin/cas-bacnet-stack/issues/3301).
+Wire Test: `tests/event_log_test.py`, `[KNOWN GAP] Event Log 1 is enabled at
+start-up` (it reads FALSE on Windows and Linux at this pin).
 
 `Enable` (cl. 12.27.8) defaults to FALSE and `BACnetStack_AddEventLogObject`
 takes no enable argument; the customer header has no other call that sets it
@@ -31,6 +36,9 @@ today that needs an operator's write first. The README says so.
 ### 3. The device's own broadcast notification is logged twice
 
 Filed: [#3957](https://github.com/chipkin/cas-bacnet-stack/issues/3957). Verification found it is the stack's fault, not `common/`'s.
+Wire Test: `tests/event_log_test.py`, `[KNOWN GAP] Each transition is logged
+once` - 2 records of one transition, process identifiers 0 and 1, on Windows
+and Linux (2026-10-16).
 
 With `Enable` TRUE, one Passenger_Alarm transition gives `Record_Count` 3: the
 log-status record for the Enable write, then the **same** notification twice -
@@ -55,6 +63,30 @@ the fix belongs in the stack (ignore a received notification from its own
 address) or in `common/` (drop datagrams from its own address) is for the
 coordinator to decide.
 
+### 4. A refused landing call cannot name its error
+
+**Stack defect, not filed** (for the coordinator). `CallbackSetElevatorGroupLandingCallControl`
+(`BACnetStack_RegisterCallbackSetElevatorGroupLandingCallControl`, `CASBACnetStackDLL.h`)
+has no `errorCode` out-parameter, unlike every `CallbackSetProperty*`. When the
+application refuses a call for a floor the installation does not have, the stack
+falls through to its primitive-datatype switch (`BACnetBusinessLogic::SetValueUsingCallbacks`,
+"Unsupported datatype for callbacks", then `SetStoredDBValue` "Object does not have a
+value for property=[471]") and the client gets **PROPERTY / WRITE_ACCESS_DENIED**
+(class 2, code 40). 135-2024 cl. 15.9.1.3.1 names PROPERTY / VALUE_OUT_OF_RANGE for
+"The value provided is outside the range of values that the property can take on",
+and WRITE_ACCESS_DENIED means the property "is currently not writable by the
+requestor" - the wrong message to the management station. Wire Test:
+`tests/elevator_test.py`, `[KNOWN GAP] The refusal of floor 11 / floor 0 is PROPERTY
+/ VALUE_OUT_OF_RANGE`; the refusal itself (an Error, and the car not moving) is a
+checked requirement. Seen on Windows and Linux, 2026-10-16:
+
+```
+WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - floor 11 is not served (floors 1..10)
+::CASBACnetStack::BACnetBusinessLogic::SetValueUsingCallbacks() ... Error: Unsupported datatype for callbacks
+::CASBACnetStack::BACnetDBDevice::SetStoredDBValue() ... Error: Object does not have a value for property=[471] in the stack memory
+[KNOWN GAP] The refusal of floor 11 is PROPERTY / VALUE_OUT_OF_RANGE (cl. 15.9.1.3.1) - ... (got Error class=2 code=40)
+```
+
 ## Closed upstream - re-checked at this pin and removed from this file
 
 - **#2045** (AddEventLogObject "Failed to set the date/time" log flood) - CLOSED
@@ -73,26 +105,25 @@ coordinator to decide.
   to a stack-held Calendar that drives Saffron (as B-BC-CPP 1.0.7 did) is this
   example's own work, no longer blocked.
 
-## Checked by hand at this pin (not yet Wire Tests)
+## Now Wire Tests (were checked by hand at 1.1.0)
 
-On 2026-10-15, Windows and Linux, after the 1.1.0 fixes:
+- **DM-BR-B, backup and restore**: `tests/backup_restore_test.py` - a full
+  backup, a changed configuration, a restore that brings it back, a wrong
+  password and an invalid image.
+- **AE-EL-I-B**: `tests/event_log_test.py` - Enable, a logged Passenger_Alarm
+  transition, ReadRange (whole buffer and by position), Enable FALSE again.
+- **Landing_Call_Control**: `tests/elevator_test.py` - the write now calls the
+  car Simulation, which answers it.
 
-- **DM-BR-B, backup and restore**: ReinitializeDevice STARTBACKUP (SimpleACK,
-  `System_Status` backup-in-progress), AtomicReadFile of File 1, ENDBACKUP,
-  STARTRESTORE, AtomicWriteFile of 15 octets, ENDRESTORE - every step
-  acknowledged, the four backup/restore callbacks ran, and File 1 then read
-  back the restored content. Before 1.1.0 the example's ReinitializeDevice
-  callback refused every backup/restore state, so no backup could start.
-- **AE-EL-I-B**: with `Enable` written TRUE, a Passenger_Alarm transition is
-  logged and ReadRange returns the records (stack defects 2 and 3 above apply).
-  Before 1.1.0 ReadRange was not enabled, so Log_Buffer could not be read.
-- **Landing_Call_Control**: before any write it reads floor 0, direction
-  `none`; a raw-encoded WriteProperty (`09 07 19 03`, floor 7 up) is
-  acknowledged and reads back unchanged. Nothing moves the car.
+## Not done
 
-## The example's own next steps (phase 2)
-
-- A car simulation that answers a landing call (position, direction, doors),
-  with a Wire Test that fails if the handler is removed.
-- Wire Tests for CreateObject/DeleteObject, the Schedule driving Chartreuse,
-  the Event Log capturing an alarm, and the backup/restore cycle above.
+- Calendar 1 (Cream) is still the old `AddObject` Calendar whose
+  `Present_Value` always answers FALSE; Saffron's one exception uses the inline
+  calendar-entry form. Moving Cream to `BACnetStack_AddCalendarObject` (as
+  B-BC-CPP did) is open, not blocked.
+- The Peer does not receive the Lift's EventNotifications on the wire: they go
+  to Notification Class 1's one recipient, the local subnet **broadcast**, which
+  a Python Peer bound to 127.0.0.1 cannot hear on Windows. The Event Log test
+  proves they are generated (the log records the initiated notification). A
+  Recipient_List the Peer can write would need AE-CRL-B, which B-AEC does not
+  require.

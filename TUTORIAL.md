@@ -22,6 +22,19 @@ The example is intentionally linear so it's easy to follow and copy from.
 callbacks in `main.cpp` (e.g. the initial value of `g_analogInput1Value`, or
 the `"Bronze"` / `"Chartreuse"` strings in `GetPropertyCharString`).
 
+**Connect your elevator** - the car in this example is a Simulation (README
+"What is Simulation"). `LiftCarTick()` and `SetElevatorGroupLandingCallControl()`
+in `main.cpp` are the two places to replace: forward a landing call to your
+elevator controller instead of queueing it in `g_liftCar`, and fill
+`g_liftCar.position` / `movingDirection` / `doorStatus` from what the controller
+reports (calling `BACnetStack_UpdateValue` when one changes, as
+`LiftCarPropertyChanged` does, so COV subscribers hear about it).
+
+**Back up more configuration** - `BuildConfigurationImage()` and
+`ParseConfigurationImage()` / `ApplyRestoredConfiguration()` decide what a
+backup holds. Add a line type for each setting your device keeps; keep the
+version header so an old image is refused rather than half-applied.
+
 **Change the device identity before you ship** - vendor ID, vendor name, model
 name, description, firmware revision, application software version and device
 name are all in the `CHANGE ALL OF THIS BEFORE YOU SHIP` block at the top of
@@ -188,5 +201,7 @@ not in `accepted`, comes out as a ⚠ row - that is a defect, not a feature.
 | Client sends Who-Is but sees no I-Am | Firewall is blocking UDP 47808, or the client and device are on different subnets (Who-Is is a broadcast). Allow the port; test on the same subnet first. |
 | `CreateObject` of anything other than `analog-value` is rejected | Correct - Analog Value is the only object type this example marks creatable (DM-OCD-B, F-OCD). Not a bug. |
 | A created Analog Value's `Object_Name` reads back `"undefined"` | Correct - deliberately left at the stack's generic default; see `docs/objects.json`'s Analog Value entry and the CreateObject/DeleteObject table above. Not a bug. |
-| WriteProperty of `Landing_Call_Control` | Before any write it reads floor 0, direction `none`. A raw-encoded write (`09 07 19 03`, floor 7 up) is acknowledged and reads back unchanged - checked by hand on 2026-10-15, not yet a Wire Test. The car does not move. |
+| WriteProperty of `Landing_Call_Control` answers `write-access-denied` | The floor is outside 1-10 (`LIFT_LOWEST_FLOOR` / `LIFT_HIGHEST_FLOOR`), the direction is not up/down, or 8 calls are already waiting. The callback has no error code, so the stack answers `write-access-denied` rather than `value-out-of-range` (`TODO.md` item 4). |
+| The car takes a while to arrive | It travels a floor every 2 s and holds the door open 3 s at each stop (`LIFT_MILLISECONDS_PER_FLOOR`, `LIFT_DOOR_DWELL_MILLISECONDS`). Watch the `Simulation:` console lines. |
+| A schedule transition does not happen after a TimeSynchronization | It does, on the synchronised clock: `Local_Date`/`Local_Time` keep running from the synced moment. Read `Local_Time` to see where the device clock is. |
 | The Event Log's `Record_Count` stays 0 | `Enable` starts FALSE and the stack has no call to start it TRUE: write `Enable` TRUE from a client first (`TODO.md`). |
