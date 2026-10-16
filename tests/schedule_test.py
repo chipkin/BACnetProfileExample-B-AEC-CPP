@@ -109,7 +109,7 @@ def run(workstation, args):
 def main():
     args = setup.parser(__doc__).parse_args()
     controller = setup.start_controller(args)
-    workstation = setup.RetryingWorkstation()
+    workstation = setup.workstation()
     try:
         run(workstation, args)
     finally:

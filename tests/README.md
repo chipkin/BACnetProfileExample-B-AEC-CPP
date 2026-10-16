@@ -2,7 +2,7 @@
 
 Tests that drive the running advanced elevator controller over BACnet/IP from
 outside it. They are written against the series' shared harness in
-[`../wiretest/`](../wiretest/README.md) (vendored, like `common/`, at 0.6.0);
+[`../wiretest/`](../wiretest/README.md) (vendored, like `common/`, at 0.7.0);
 everything specific to this device is here. Python 3 standard library only -
 nothing to `pip install`.
 
@@ -47,13 +47,13 @@ variable `BAEC_TEST_PASSENGER_ALARM_SECONDS`, which `event_log_test.py` sets to
 command-line option and changes nothing a BACnet client can reach.
 `backup_restore_test.py` starts the controller with `--dcc-password`.
 
-`aec_setup.py` holds this controller's numbers and the start-up;
-`aec_services.py` holds the service encoders and decoders wiretest 0.6.0 lacks
-(CreateObject, DeleteObject, AtomicReadFile/WriteFile, ReadRange with Event Log
-records, ReadPropertyMultiple, BACnetLandingCallStatus) - generic, proposed for
-wiretest 0.7.0, like `RetryingWorkstation` in `aec_setup.py`.
+`aec_setup.py` holds this controller's numbers and the start-up. The service
+encoders and decoders (CreateObject, DeleteObject, AtomicReadFile/WriteFile,
+ReadRange with Event Log records, ReadPropertyMultiple, BACnetLandingCallStatus)
+are `wiretest.services` (0.7.0; they began here as `aec_services.py`).
 
-**`[RETRY]` lines.** `RetryingWorkstation` sends an unanswered confirmed
+**`[RETRY]` lines.** `aec_setup.workstation()` - `wiretest.Workstation(retries=3,
+timeout=0.6)`, which began here as `RetryingWorkstation` - sends an unanswered confirmed
 request again after 0.6 s with the same invoke id, up to 3 times, and prints a
 `[RETRY]` line each time. On Windows, while the machine was busy with parallel
 builds, about one request in a hundred went unanswered; the controller's console

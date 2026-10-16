@@ -30,31 +30,31 @@ from wiretest import record, known_gap
 POLL = 0.2
 
 
-CAR_PROPERTIES = [(setup.PROPERTY_CAR_POSITION, None), (setup.PROPERTY_CAR_MOVING_DIRECTION, None),
-                  (setup.PROPERTY_CAR_DOOR_STATUS, 1)]
+CAR_PROPERTIES = [setup.PROPERTY_CAR_POSITION, setup.PROPERTY_CAR_MOVING_DIRECTION, (setup.PROPERTY_CAR_DOOR_STATUS, 1)]
 
 
 def car_state(workstation, args):
     """(Car_Position, Car_Moving_Direction, Car_Door_Status[1]) in ONE ReadPropertyMultiple
     (DS-RPM-B), so the three are one snapshot of the moving car."""
-    answer = workstation.request(lambda invoke_id: services.read_property_multiple_request(
-        invoke_id, *setup.MAUVE, CAR_PROPERTIES), args.port)
+    answer = workstation.read_property_multiple(args.port, [(*setup.MAUVE, CAR_PROPERTIES)])
     results = services.parse_read_property_multiple_ack(answer)
     if results is None:
         print(f"      ReadPropertyMultiple Lift 1: {answer.describe()}")
         return (None, None, None)
-    return tuple(wiretest.decode_application(results.get(reference)) if isinstance(results.get(reference), bytes)
+    car = results.get(setup.MAUVE, {})
+    return tuple(wiretest.decode_application(car.get(reference)) if isinstance(car.get(reference), bytes)
                  else None for reference in CAR_PROPERTIES)
 
 
 def landing_calls(workstation, args):
-    return services.landing_call_statuses(
+    return services.decode_landing_calls(
         setup.read_octets(workstation, args, setup.MAROON, setup.PROPERTY_LANDING_CALLS))
 
 
 def assigned_calls(workstation, args):
     octets = setup.read_octets(workstation, args, setup.MAUVE, setup.PROPERTY_ASSIGNED_LANDING_CALLS, 1)
-    return [(floor, value) for floor, _, value in services.landing_call_statuses(octets)] if octets is not None else None
+    return ([(call["floor"], call.get("direction")) for call in services.decode_landing_calls(octets)]
+            if octets is not None else None)
 
 
 def call(workstation, args, floor, direction):
@@ -93,7 +93,7 @@ def run(workstation, args):
     answer = call(workstation, args, 6, setup.DIRECTION_UP)
     record("Landing call floor 6 UP is acknowledged", answer.ok, answer.describe())
     calls = landing_calls(workstation, args)
-    record("Landing_Calls lists floor 6 UP", calls == [(6, "direction", setup.DIRECTION_UP)], f"read {calls}")
+    record("Landing_Calls lists floor 6 UP", calls == [{"floor": 6, "direction": setup.DIRECTION_UP}], f"read {calls}")
     assigned = assigned_calls(workstation, args)
     record("Lift 1 Assigned_Landing_Calls[1] lists floor 6 UP", assigned == [(6, setup.DIRECTION_UP)],
            f"read {assigned}")
@@ -114,9 +114,10 @@ def run(workstation, args):
     closed = wiretest.wait_until(lambda: car_state(workstation, args) == (6, setup.DIRECTION_STOPPED, setup.DOOR_CLOSED),
                                  setup.LIFT_DOOR_DWELL_SECONDS + 1.5)
     record("The door closes after its dwell", closed, f"read {car_state(workstation, args)}")
-    control = services.landing_call_statuses(
+    control = services.decode_landing_calls(
         setup.read_octets(workstation, args, setup.MAROON, setup.PROPERTY_LANDING_CALL_CONTROL))
-    record("Landing_Call_Control reads back the last call written", control == [(6, "direction", setup.DIRECTION_UP)],
+    record("Landing_Call_Control reads back the last call written",
+           control == [{"floor": 6, "direction": setup.DIRECTION_UP}],
            f"read {control}")
 
     # 3. Down to floor 2.
@@ -138,7 +139,7 @@ def run(workstation, args):
         record(f"FAILURE MODE: a landing call for floor {floor} is refused with an Error",
                answer.answered and answer.error is not None, answer.describe())
         known_gap(f"The refusal of floor {floor} is PROPERTY / VALUE_OUT_OF_RANGE (cl. 15.9.1.3.1)",
-                  answer.error == (services.ERROR_CLASS_PROPERTY, services.ERROR_CODE_VALUE_OUT_OF_RANGE),
+                  answer.error == (wiretest.ERROR_CLASS_PROPERTY, wiretest.ERROR_CODE_VALUE_OUT_OF_RANGE),
                   "stack: CallbackSetElevatorGroupLandingCallControl has no error-code out-parameter, "
                   f"so the stack picks the error (got {answer.describe()}) - TODO.md")
     samples = watch_trip(workstation, args, 2 * setup.LIFT_SECONDS_PER_FLOOR)
@@ -151,7 +152,7 @@ def run(workstation, args):
 def main():
     args = setup.parser(__doc__).parse_args()
     controller = setup.start_controller(args)
-    workstation = setup.RetryingWorkstation()
+    workstation = setup.workstation()
     try:
         run(workstation, args)
     finally:

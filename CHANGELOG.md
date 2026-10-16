@@ -54,6 +54,7 @@ Profile-functional bar, `docs/GLOSSARY.md` in the example series).
   / `Landing_Door_Status` come from the Simulation; they were fixed demo values
   (floor 5) that contradicted a car that moves.
 - Wire Tests run on UDP 48040 by default (was 47863).
+- Wire Tests use the shared `wiretest/` 0.7.0: `tests/aec_services.py` is folded into it (`wiretest.services`, the enumerations into `wiretest.codec`) and `RetryingWorkstation` is `wiretest.Workstation(retries=3, timeout=0.6)`.
 
 ## [1.1.0] - unreleased
 

@@ -49,7 +49,7 @@ def run(workstation, args):
            f"{len(objects or [])} objects")
     answer = workstation.read_property(args.port, *CREATED, PROPERTY_PRESENT_VALUE)
     record("Control: reading Analog Value 100 gives OBJECT / UNKNOWN_OBJECT",
-           answer.error == (services.ERROR_CLASS_OBJECT, services.ERROR_CODE_UNKNOWN_OBJECT), answer.describe())
+           answer.error == (wiretest.ERROR_CLASS_OBJECT, wiretest.ERROR_CODE_UNKNOWN_OBJECT), answer.describe())
 
     # 2. Create by identifier, modify.
     answer = create(workstation, args, 100)
@@ -82,19 +82,19 @@ def run(workstation, args):
     record("Object_List no longer lists Analog Value 100", objects is not None and CREATED not in objects)
     answer = workstation.read_property(args.port, *CREATED, PROPERTY_PRESENT_VALUE)
     record("Reading Analog Value 100 gives UNKNOWN_OBJECT again",
-           answer.error == (services.ERROR_CLASS_OBJECT, services.ERROR_CODE_UNKNOWN_OBJECT), answer.describe())
+           answer.error == (wiretest.ERROR_CLASS_OBJECT, wiretest.ERROR_CODE_UNKNOWN_OBJECT), answer.describe())
 
     # 5. Failure Modes.
     answer = create(workstation, args, 7, wiretest.OBJECT_TYPE_ANALOG_INPUT)
     record("FAILURE MODE: CreateObject Analog Input 7 (not a creatable type) -> an OBJECT Error",
-           answer.error is not None and answer.error[0] == services.ERROR_CLASS_OBJECT and
-           answer.error[1] in (services.ERROR_CODE_DYNAMIC_CREATION_NOT_SUPPORTED,
-                               services.ERROR_CODE_UNSUPPORTED_OBJECT_TYPE), answer.describe())
+           answer.error is not None and answer.error[0] == wiretest.ERROR_CLASS_OBJECT and
+           answer.error[1] in (wiretest.ERROR_CODE_DYNAMIC_CREATION_NOT_SUPPORTED,
+                               wiretest.ERROR_CODE_UNSUPPORTED_OBJECT_TYPE), answer.describe())
     objects = setup.object_list(workstation, args)
     record("... and no Analog Input 7 appears", objects is not None and (wiretest.OBJECT_TYPE_ANALOG_INPUT, 7) not in objects)
     answer = create(workstation, args, picked[1] if picked else 101)
     record("FAILURE MODE: CreateObject of an Analog Value that exists -> OBJECT / OBJECT_IDENTIFIER_ALREADY_EXISTS",
-           answer.error == (services.ERROR_CLASS_OBJECT, services.ERROR_CODE_OBJECT_IDENTIFIER_ALREADY_EXISTS),
+           answer.error == (wiretest.ERROR_CLASS_OBJECT, wiretest.ERROR_CODE_OBJECT_IDENTIFIER_ALREADY_EXISTS),
            answer.describe())
     created = 1 if picked else 0
     filled = True
@@ -103,24 +103,24 @@ def run(workstation, args):
     record(f"Creating Analog Values up to the limit of {setup.MAX_CREATED_ANALOG_VALUES} succeeds", filled)
     answer = create(workstation, args, 300)
     record(f"FAILURE MODE: Analog Value number {setup.MAX_CREATED_ANALOG_VALUES + 1} -> RESOURCES / NO_SPACE_FOR_OBJECT",
-           answer.error == (services.ERROR_CLASS_RESOURCES, services.ERROR_CODE_NO_SPACE_FOR_OBJECT), answer.describe())
+           answer.error == (wiretest.ERROR_CLASS_RESOURCES, wiretest.ERROR_CODE_NO_SPACE_FOR_OBJECT), answer.describe())
     objects = setup.object_list(workstation, args)
     record("... and no Analog Value 300 appears", objects is not None and (ANALOG_VALUE, 300) not in objects)
     answer = delete(workstation, args, *setup.CHARTREUSE)
     record("FAILURE MODE: DeleteObject Analog Output 1 -> OBJECT / OBJECT_DELETION_NOT_PERMITTED",
-           answer.error == (services.ERROR_CLASS_OBJECT, services.ERROR_CODE_OBJECT_DELETION_NOT_PERMITTED),
+           answer.error == (wiretest.ERROR_CLASS_OBJECT, wiretest.ERROR_CODE_OBJECT_DELETION_NOT_PERMITTED),
            answer.describe())
     objects = setup.object_list(workstation, args)
     record("... and Analog Output 1 is still there", objects is not None and setup.CHARTREUSE in objects)
     answer = delete(workstation, args, ANALOG_VALUE, 100)
     record("FAILURE MODE: DeleteObject of an Analog Value that does not exist -> OBJECT / UNKNOWN_OBJECT",
-           answer.error == (services.ERROR_CLASS_OBJECT, services.ERROR_CODE_UNKNOWN_OBJECT), answer.describe())
+           answer.error == (wiretest.ERROR_CLASS_OBJECT, wiretest.ERROR_CODE_UNKNOWN_OBJECT), answer.describe())
 
 
 def main():
     args = setup.parser(__doc__).parse_args()
     controller = setup.start_controller(args)
-    workstation = setup.RetryingWorkstation()
+    workstation = setup.workstation()
     try:
         run(workstation, args)
     finally:

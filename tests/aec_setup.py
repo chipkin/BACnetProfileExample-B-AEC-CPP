@@ -18,7 +18,6 @@ the simulated Passenger_Alarm flip sooner.
 """
 import argparse
 import sys
-import time
 from pathlib import Path
 
 TESTS = Path(__file__).resolve().parent
@@ -29,7 +28,7 @@ sys.path.insert(0, str(TESTS))
 import wiretest  # noqa: E402  (the vendored harness at the repository root)
 from wiretest import Workstation  # noqa: E402,F401  (wiretest 0.6.0)
 from wiretest import alarm as alarm_codec  # noqa: E402,F401
-import aec_services as services  # noqa: E402,F401
+from wiretest import services  # noqa: E402,F401  (wiretest 0.7.0: CreateObject, files, ReadRange, RPM, ...)
 
 # Match main.cpp.
 DEVICE_INSTANCE = 389014
@@ -87,42 +86,13 @@ DOOR_CLOSED = 0
 DOOR_OPENED = 1
 
 
-class RetryingWorkstation(Workstation):
-    """A Workstation whose confirmed requests are sent again, with the SAME invoke id, when
-    unanswered - what wiretest.Client(retries=) does, for the Workstation (proposed for
-    wiretest 0.7.0). Each retry prints a [RETRY] line, so a lost datagram is visible in the
-    output rather than silently tolerated. On a busy Windows host a request is now and then
-    lost before it reaches the example (its console logs every request it received and an
-    answer to each), which is what this covers."""
-
-    def __init__(self, retries=3, attempt_timeout=0.6, **arguments):
-        super().__init__(**arguments)
-        self.retries = retries
-        self.attempt_timeout = attempt_timeout
-
-    def request(self, build_apdu, port, ip="127.0.0.1", timeout=None):
-        attempt_timeout = timeout if timeout is not None else self.attempt_timeout
-        with self._lock:
-            self._invoke_id = (self._invoke_id + 1) % 256
-            invoke_id = self._invoke_id
-            self._responses = [frame for frame in self._responses if frame.invoke_id != invoke_id]
-        octets = wiretest.bvlc(wiretest.npdu(build_apdu(invoke_id), expecting_reply=True))
-        for attempt in range(1 + self.retries):
-            if attempt:
-                print(f"[RETRY] invoke id {invoke_id} unanswered after {attempt_timeout} s - sent again", flush=True)
-            self.sock.sendto(octets, (ip, port))
-            deadline = time.monotonic() + attempt_timeout
-            with self._arrived:
-                while True:
-                    for frame in self._responses:
-                        if frame.invoke_id == invoke_id:
-                            self._responses.remove(frame)
-                            return wiretest.Answer(frame)
-                    remaining = deadline - time.monotonic()
-                    if remaining <= 0:
-                        break
-                    self._arrived.wait(remaining)
-        return wiretest.Answer(None)
+def workstation():
+    """The operator workstation: a wiretest.Workstation whose confirmed requests are sent again,
+    with the SAME invoke id, when unanswered after 0.6 s, up to 3 times, each with a visible
+    [RETRY] line (wiretest 0.7.0 Workstation(retries=, timeout=)). On a busy Windows host a
+    request is now and then lost before it reaches the example (its console logs every request
+    it received and an answer to each), which is what this covers."""
+    return Workstation(retries=3, timeout=0.6)
 
 
 def parser(description):

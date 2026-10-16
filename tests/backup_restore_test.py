@@ -81,8 +81,8 @@ def last_restore_time(workstation, args):
 
 def restore(workstation, args, image):
     """START_RESTORE, write `image`, END_RESTORE; returns the three answers."""
-    started = reinitialize(workstation, args, services.REINITIALIZE_START_RESTORE)
-    wiretest.wait_until(lambda: system_status(workstation, args) != services.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
+    started = reinitialize(workstation, args, wiretest.REINITIALIZE_START_RESTORE)
+    wiretest.wait_until(lambda: system_status(workstation, args) != wiretest.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
     written, write_answer = write_file(workstation, args, image)
     return started, written, write_answer
 
@@ -93,19 +93,19 @@ def run(workstation, args):
            create(workstation, args, SETTING, 42.5) and create(workstation, args, SECOND, 1.0))
 
     # 2. Wrong password.
-    answer = reinitialize(workstation, args, services.REINITIALIZE_START_BACKUP, "not-the-password")
+    answer = reinitialize(workstation, args, wiretest.REINITIALIZE_START_BACKUP, "not-the-password")
     record("FAILURE MODE: START_BACKUP with a wrong password -> SECURITY / PASSWORD_FAILURE",
-           answer.error == (services.ERROR_CLASS_SECURITY, services.ERROR_CODE_PASSWORD_FAILURE), answer.describe())
+           answer.error == (wiretest.ERROR_CLASS_SECURITY, wiretest.ERROR_CODE_PASSWORD_FAILURE), answer.describe())
     time.sleep(0.5)
     status = system_status(workstation, args)
-    record("... and no backup starts: System_Status stays OPERATIONAL", status == services.DEVICE_STATUS_OPERATIONAL,
+    record("... and no backup starts: System_Status stays OPERATIONAL", status == wiretest.DEVICE_STATUS_OPERATIONAL,
            f"read {status}")
 
     # 3. Backup.
-    answer = reinitialize(workstation, args, services.REINITIALIZE_START_BACKUP)
+    answer = reinitialize(workstation, args, wiretest.REINITIALIZE_START_BACKUP)
     record("START_BACKUP with the password -> SimpleACK", answer.ok, answer.describe())
     in_progress = wiretest.wait_until(
-        lambda: system_status(workstation, args) == services.DEVICE_STATUS_BACKUP_IN_PROGRESS, STEP_WAIT)
+        lambda: system_status(workstation, args) == wiretest.DEVICE_STATUS_BACKUP_IN_PROGRESS, STEP_WAIT)
     record("System_Status is BACKUP_IN_PROGRESS", in_progress, f"read {system_status(workstation, args)}")
     files = wiretest.decoded_values(setup.read_octets(workstation, args, setup.DEVICE, PROPERTY_CONFIGURATION_FILES))
     record("Configuration_Files names File 1", setup.IVORY in files, f"read {files}")
@@ -116,9 +116,9 @@ def run(workstation, args):
            f"{answer.describe() if contents is None else image!r}")
     record("The image holds Analog Value 100 at 42.5 and 101 at 1.0",
            b"analog-value 100 42.5\n" in image and b"analog-value 101 1\n" in image)
-    answer = reinitialize(workstation, args, services.REINITIALIZE_END_BACKUP)
+    answer = reinitialize(workstation, args, wiretest.REINITIALIZE_END_BACKUP)
     record("END_BACKUP -> SimpleACK", answer.ok, answer.describe())
-    back = wiretest.wait_until(lambda: system_status(workstation, args) == services.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
+    back = wiretest.wait_until(lambda: system_status(workstation, args) == wiretest.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
     record("System_Status is OPERATIONAL again", back, f"read {system_status(workstation, args)}")
 
     # 4. Change the configuration.
@@ -135,7 +135,7 @@ def run(workstation, args):
            f"ACK position {written}" if written is not None else answer.describe())
     value = present_value(workstation, args, SETTING)
     record("Control: before END_RESTORE, Analog Value 100 still reads 7.0", value == 7.0, f"read {value}")
-    answer = reinitialize(workstation, args, services.REINITIALIZE_END_RESTORE)
+    answer = reinitialize(workstation, args, wiretest.REINITIALIZE_END_RESTORE)
     record("END_RESTORE -> SimpleACK", answer.ok, answer.describe())
 
     # 6. Back to the backed-up configuration.
@@ -145,7 +145,7 @@ def run(workstation, args):
     record("RESTORED: Analog Value 101 (deleted after the backup) exists again with 1.0", value == 1.0, f"read {value}")
     value = present_value(workstation, args, LATER)
     record("RESTORED: Analog Value 102 (created after the backup) is gone",
-           value == (services.ERROR_CLASS_OBJECT, services.ERROR_CODE_UNKNOWN_OBJECT), f"read {value}")
+           value == (wiretest.ERROR_CLASS_OBJECT, wiretest.ERROR_CODE_UNKNOWN_OBJECT), f"read {value}")
     objects = setup.object_list(workstation, args) or []
     record("Object_List agrees: 100 and 101 listed, 102 not",
            SETTING in objects and SECOND in objects and LATER not in objects)
@@ -160,11 +160,11 @@ def run(workstation, args):
     # A change made since the restore, which a bad image must not undo.
     workstation.write_property(args.port, *SETTING, PROPERTY_PRESENT_VALUE, wiretest.application_real(9.0))
     started, written, answer = restore(workstation, args, b"not a configuration image\n")
-    ended = reinitialize(workstation, args, services.REINITIALIZE_END_RESTORE)
+    ended = reinitialize(workstation, args, wiretest.REINITIALIZE_END_RESTORE)
     record("FAILURE MODE: restore of a file that is not a configuration image (each step acknowledged)",
            started.ok and written == 0 and ended.ok,
            f"{started.describe()} / ACK position {written} / {ended.describe()}")
-    wiretest.wait_until(lambda: system_status(workstation, args) == services.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
+    wiretest.wait_until(lambda: system_status(workstation, args) == wiretest.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
     time.sleep(0.5)
     values = (present_value(workstation, args, SETTING), present_value(workstation, args, SECOND))
     record("... and the configuration is unchanged: 100 still reads 9.0 (written after the last restore), 101 1.0",
@@ -177,7 +177,7 @@ def run(workstation, args):
 def main():
     args = setup.parser(__doc__).parse_args()
     controller = setup.start_controller(args, ["--dcc-password", setup.PASSWORD])
-    workstation = setup.RetryingWorkstation()
+    workstation = setup.workstation()
     try:
         run(workstation, args)
     finally:

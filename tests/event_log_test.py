@@ -128,7 +128,7 @@ def run(workstation, args):
 def main():
     args = setup.parser(__doc__).parse_args()
     controller = setup.start_controller(args, environment={"BAEC_TEST_PASSENGER_ALARM_SECONDS": ALARM_PERIOD})
-    workstation = setup.RetryingWorkstation()
+    workstation = setup.workstation()
     try:
         run(workstation, args)
     finally:
