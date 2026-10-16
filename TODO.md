@@ -65,7 +65,10 @@ coordinator to decide.
 
 ### 4. A refused landing call cannot name its error
 
-**Stack defect, not filed** (for the coordinator). `CallbackSetElevatorGroupLandingCallControl`
+Filed: [#3966](https://github.com/chipkin/cas-bacnet-stack/issues/3966).
+
+
+**Stack defect.** `CallbackSetElevatorGroupLandingCallControl`
 (`BACnetStack_RegisterCallbackSetElevatorGroupLandingCallControl`, `CASBACnetStackDLL.h`)
 has no `errorCode` out-parameter, unlike every `CallbackSetProperty*`. When the
 application refuses a call for a floor the installation does not have, the stack
