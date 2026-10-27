@@ -1,0 +1,669 @@
+{
+  "capabilities": {
+    "maxApduLength": 1476,
+    "maxSegmentsAccepted": 16,
+    "objectTypesSupported": [
+      "analogInput",
+      "analogOutput",
+      "analogValue",
+      "binaryInput",
+      "binaryOutput",
+      "calendar",
+      "device",
+      "file",
+      "multiStateInput",
+      "multiStateOutput",
+      "notificationClass",
+      "schedule",
+      "eventLog",
+      "positiveIntegerValue",
+      "networkPort",
+      "elevatorGroup",
+      "escalator",
+      "lift"
+    ],
+    "segmentation": "both",
+    "servicesExecuted": [
+      "readProperty",
+      "readPropertyMultiple",
+      "writeProperty",
+      "writePropertyMultiple",
+      "subscribeCov",
+      "subscribeCovPropertyMultiple",
+      "acknowledgeAlarm",
+      "getEventInformation",
+      "createObject",
+      "deleteObject",
+      "atomicReadFile",
+      "atomicWriteFile",
+      "readRange",
+      "deviceCommunicationControl",
+      "reinitializeDevice",
+      "timeSynchronization",
+      "whoHas",
+      "whoIs"
+    ],
+    "servicesSupported": [
+      "readProperty",
+      "readPropertyMultiple",
+      "writeProperty",
+      "writePropertyMultiple",
+      "subscribeCov",
+      "subscribeCovPropertyMultiple",
+      "acknowledgeAlarm",
+      "getEventInformation",
+      "confirmedCovNotification",
+      "unconfirmedCovNotification",
+      "confirmedCovNotificationMultiple",
+      "unconfirmedCovNotificationMultiple",
+      "confirmedEventNotification",
+      "unconfirmedEventNotification",
+      "createObject",
+      "deleteObject",
+      "atomicReadFile",
+      "atomicWriteFile",
+      "readRange",
+      "deviceCommunicationControl",
+      "reinitializeDevice",
+      "timeSynchronization",
+      "iAm",
+      "iHave",
+      "whoHas",
+      "whoIs"
+    ]
+  },
+  "conflicts": [],
+  "declared": {
+    "bibbs": [
+      "DS-RP-B",
+      "DS-RPM-B",
+      "DS-WP-B",
+      "DS-WPM-B",
+      "DS-COV-B",
+      "DS-COVM-B",
+      "AE-N-I-B",
+      "AE-ACK-B",
+      "AE-INFO-B",
+      "AE-EL-I-B",
+      "SCHED-I-B",
+      "DM-DDB-A",
+      "DM-DDB-B",
+      "DM-DOB-B",
+      "DM-DCC-B",
+      "DM-TS-B",
+      "DM-OCD-B",
+      "DM-RD-B",
+      "DM-BR-B"
+    ],
+    "source": "operator",
+    "options": {
+      "4.6::Contains writable non-array properties": "AO 1 Present_Value (REAL), BO 1 Present_Value (Enumerated), MSO 1 Present_Value (Unsigned), File 1 Archive (BOOLEAN) and File_Size (Unsigned), Event Log 1 Enable (BOOLEAN), Elevator Group 1 Landing_Call_Control",
+      "4.6::Contains writable BOOLEAN properties": "File 1 Archive, Event Log 1 Enable",
+      "4.6::Contains writable Enumerated properties": "BO 1 Present_Value",
+      "4.6::Contains writable Unsigned properties": "MSO 1 Present_Value, File 1 File_Size",
+      "4.6::Contains writable REAL properties": "AO 1 Present_Value",
+      "4.6::Contains writable list properties": "Notification Class 1 Recipient_List (BACnetLIST of BACnetDestination)",
+      "4.6::Contains writable properties with non-basic data types": "Elevator Group 1 Landing_Call_Control (BACnetLandingCallStatus), Notification Class 1 Recipient_List (BACnetDestination)",
+      "4.6::Contains commandable properties": "AO 1 / BO 1 / MSO 1 Present_Value (Priority_Array, Relinquish_Default)",
+      "4.8::Contains multiple objects with writable properties": "AO 1 Present_Value (REAL), BO 1 Present_Value (Enumerated), MSO 1 Present_Value (Unsigned), File 1 Archive (BOOLEAN) and File_Size (Unsigned), Event Log 1 Enable (BOOLEAN), Elevator Group 1 Landing_Call_Control",
+      "4.8::Contains objects with multiple writable properties": "File 1: Archive and File_Size",
+      "4.8::Contains writable BOOLEAN properties": "File 1 Archive, Event Log 1 Enable",
+      "4.8::Contains writable Enumerated properties": "BO 1 Present_Value",
+      "4.8::Contains writable Unsigned properties": "MSO 1 Present_Value, File 1 File_Size",
+      "4.8::Contains writable REAL properties": "AO 1 Present_Value",
+      "4.8::Contains writable list properties": "Notification Class 1 Recipient_List (BACnetLIST of BACnetDestination)",
+      "4.8::Contains writable properties with non-basic data types": "Elevator Group 1 Landing_Call_Control (BACnetLandingCallStatus), Notification Class 1 Recipient_List (BACnetDestination)",
+      "4.8::Contains commandable properties": "AO 1 / BO 1 / MSO 1 Present_Value",
+      "4.10::Supports COV for Analog Input objects": "AI 1 (9.10.1.1 / .2 PASS on it); the stack refuses SubscribeCOV on AO 1 (optional-functionality-not-supported), so no other type is claimed",
+      "4.26::Supports COVM for non-array property": "AI 1 Present_Value and Status_Flags (SetPropertySubscribable)",
+      "4.26::Supports COVM for REAL property values": "AI 1 Present_Value",
+      "4.26::Supports COVM for BitString property values": "AI 1 Status_Flags",
+      "5.2::Implements intrinsic alarming": "Lift 1 Passenger_Alarm through Notification Class 1",
+      "5.2::Implements the CHANGE_OF_STATE algorithm": "Lift 1: BACnetStack_SetIntrinsicChangeOfStateAlgorithmBool on Passenger_Alarm",
+      "6.4::Is able to schedule REAL values": "Schedule 1 writes AO 1 Present_Value (REAL), Schedule_Default 20.0",
+      "6.4::Supports DM-TS-B": "DM-TS-B is claimed (PICS section 3)",
+      "8.18::Supports password protected Backup": "ReinitializeDevice STARTBACKUP needs the --dcc-password password",
+      "8.18::Supports password protected Restore": "ReinitializeDevice STARTRESTORE needs the --dcc-password password",
+      "8.22::Supports object creation and deletion of the Analog Value object": "Analog Value is the only creatable type (BACnetStack_SetObjectTypeCreatable)",
+      "3.17::Supports writable Recipient_List property": "Notification Class 1 Recipient_List is seeded with the local subnet broadcast entry and made writable (main.cpp BACnetStack_SetPropertyWritable)"
+    }
+  },
+  "discovered": {
+    "capturedAt": "2026-10-22T08:00:10.194Z",
+    "readDeviceProperties": {
+      "applicationSoftwareVersion": "1.2.0",
+      "firmwareRevision": "6.0.23.0",
+      "modelName": "CAS BACnet Stack Example - B-AEC",
+      "objectName": "Chipkin Example B-AEC",
+      "protocolRevision": 30,
+      "protocolVersion": 1,
+      "vendorId": 389,
+      "vendorName": "Chipkin Automation Systems"
+    },
+    "whoIsResults": [
+      {
+        "deviceInstance": 389014,
+        "maxApdu": 1476,
+        "segmentation": "both",
+        "vendorId": 389
+      }
+    ]
+  },
+  "identity": {
+    "applicationSoftwareVersion": "1.2.0",
+    "deviceInstance": 389014,
+    "firmwareRevision": "6.0.23.0",
+    "modelName": "CAS BACnet Stack Example - B-AEC",
+    "objectName": "Chipkin Example B-AEC",
+    "protocolRevision": 30,
+    "protocolVersion": 1,
+    "vendorId": 389,
+    "vendorName": "Chipkin Automation Systems"
+  },
+  "network": {
+    "address": {
+      "ip": "127.0.0.1",
+      "port": 47834
+    },
+    "transport": "bacnetIp"
+  },
+  "objects": [
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "analogInput"
+      },
+      "objectName": "Bronze",
+      "properties": {
+        "covIncrement": {
+          "tag": "real",
+          "value": 1
+        },
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "units": {
+          "name": "degreesCelsius",
+          "tag": "enumerated",
+          "value": 62
+        }
+      }
+    },
+    {
+      "commandable": true,
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "analogOutput"
+      },
+      "objectName": "Chartreuse",
+      "properties": {
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "relinquishDefault": {
+          "tag": "real",
+          "value": 20
+        },
+        "units": {
+          "name": "degreesCelsius",
+          "tag": "enumerated",
+          "value": 62
+        }
+      },
+      "writable": true
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "binaryInput"
+      },
+      "objectName": "Emerald",
+      "properties": {
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "polarity": {
+          "name": "normal",
+          "tag": "enumerated",
+          "value": 0
+        }
+      }
+    },
+    {
+      "commandable": true,
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "binaryOutput"
+      },
+      "objectName": "Fuchsia",
+      "properties": {
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "polarity": {
+          "name": "normal",
+          "tag": "enumerated",
+          "value": 0
+        },
+        "relinquishDefault": {
+          "name": "inactive",
+          "tag": "enumerated",
+          "value": 0
+        }
+      },
+      "writable": true
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "calendar"
+      },
+      "objectName": "Cream",
+      "properties": {}
+    },
+    {
+      "objectIdentifier": {
+        "instance": 389014,
+        "type": "device"
+      },
+      "objectName": "Chipkin Example B-AEC",
+      "properties": {
+        "maxApduLengthAccepted": {
+          "tag": "unsignedInt",
+          "value": 1476
+        },
+        "protocolRevision": {
+          "tag": "unsignedInt",
+          "value": 30
+        },
+        "protocolVersion": {
+          "tag": "unsignedInt",
+          "value": 1
+        },
+        "vendorIdentifier": {
+          "tag": "unsignedInt",
+          "value": 389
+        }
+      }
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "file"
+      },
+      "objectName": "Ivory",
+      "properties": {
+        "readOnly": {
+          "tag": "boolean",
+          "value": false
+        }
+      }
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "multiStateInput"
+      },
+      "objectName": "Hot Pink",
+      "properties": {
+        "numberOfStates": {
+          "tag": "unsignedInt",
+          "value": 3
+        },
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "stateText": {
+          "tag": "constructed",
+          "value": [
+            {
+              "tag": "characterString",
+              "value": "On"
+            },
+            {
+              "tag": "characterString",
+              "value": "Off"
+            },
+            {
+              "tag": "characterString",
+              "value": "Auto"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "commandable": true,
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "multiStateOutput"
+      },
+      "objectName": "Indigo",
+      "properties": {
+        "numberOfStates": {
+          "tag": "unsignedInt",
+          "value": 3
+        },
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "relinquishDefault": {
+          "tag": "unsignedInt",
+          "value": 1
+        }
+      },
+      "writable": true
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "notificationClass"
+      },
+      "objectName": "Crimson",
+      "properties": {},
+      "writable": true
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "schedule"
+      },
+      "objectName": "Saffron",
+      "properties": {
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "priorityForWriting": {
+          "tag": "unsignedInt",
+          "value": 8
+        }
+      }
+    },
+    {
+      "notReadableProperties": [
+        131
+      ],
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "eventLog"
+      },
+      "objectName": "Beige",
+      "properties": {
+        "bufferSize": {
+          "tag": "unsignedInt",
+          "value": 100
+        }
+      }
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "positiveIntegerValue"
+      },
+      "objectName": "Turquoise",
+      "properties": {
+        "units": {
+          "name": "noUnits",
+          "tag": "enumerated",
+          "value": 95
+        }
+      }
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "networkPort"
+      },
+      "objectName": "Vermilion",
+      "properties": {
+        "apduLength": {
+          "tag": "unsignedInt",
+          "value": 1476
+        },
+        "networkType": {
+          "name": "ipv4",
+          "tag": "enumerated",
+          "value": 5
+        },
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        },
+        "protocolLevel": {
+          "name": "bacnetApplication",
+          "tag": "enumerated",
+          "value": 2
+        }
+      }
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "elevatorGroup"
+      },
+      "objectName": "Maroon",
+      "properties": {}
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "escalator"
+      },
+      "objectName": "Mint",
+      "properties": {
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        }
+      }
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "lift"
+      },
+      "objectName": "Mauve",
+      "properties": {
+        "eventEnable": {
+          "tag": "bitString",
+          "value": [
+            true,
+            false,
+            true
+          ]
+        },
+        "notificationClass": {
+          "tag": "unsignedInt",
+          "value": 1
+        },
+        "notifyType": {
+          "name": "alarm",
+          "tag": "enumerated",
+          "value": 0
+        },
+        "outOfService": {
+          "tag": "boolean",
+          "value": false
+        }
+      }
+    }
+  ],
+  "provenance": {
+    "epicsHeader": {
+      "characterSetsSupported": "derived",
+      "dataLinkOptions": "derived",
+      "deviceProfile": "user-entered",
+      "productDescription": "user-entered",
+      "specialFunctionality": "derived"
+    },
+    "generatedAt": "2026-10-22T08:00:13.272Z",
+    "snapshotCapturedAt": "2026-10-22T08:00:10.194Z",
+    "testPoints": 3
+  },
+  "testDatabase": {
+    "commandableTestPoints": [
+      {
+        "defaultPriority": 16,
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "analogOutput"
+        },
+        "propertyIdentifier": "presentValue"
+      },
+      {
+        "defaultPriority": 16,
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "binaryOutput"
+        },
+        "propertyIdentifier": "presentValue"
+      },
+      {
+        "defaultPriority": 16,
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "multiStateOutput"
+        },
+        "propertyIdentifier": "presentValue"
+      }
+    ],
+    "deviceConfigurationScenario": {
+      "notes": "The Device object is the only object whose identity can change, and only by start-up configuration: restart the example with --deviceID <n> or --deviceName <text>. A WriteProperty to the Device's Object_Name or Object_Identifier is refused (write-access-denied), so nothing changes over the network.",
+      "objectNameChangeMethod": "replaceConfiguration",
+      "safeAlternateObjectIdentifier": {
+        "instance": 389914,
+        "type": "device"
+      },
+      "safeAlternateObjectName": "Chipkin Example B-AEC Alt"
+    },
+    "identityMutationTestPoints": [
+      {
+        "notes": "The Device object is the only object whose identity can change, and only by start-up configuration: restart the example with --deviceID <n> or --deviceName <text>. A WriteProperty to the Device's Object_Name or Object_Identifier is refused (write-access-denied), so nothing changes over the network.",
+        "objectIdentifier": {
+          "instance": 389014,
+          "type": "device"
+        },
+        "safeAlternateObjectIdentifier": {
+          "instance": 389914,
+          "type": "device"
+        },
+        "safeAlternateObjectName": "Chipkin Example B-AEC Alt"
+      }
+    ],
+    "multiStateInputStateTextScenario": {
+      "initialSize": 3,
+      "numberOfStatesPropertyIdentifier": "numberOfStates",
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "multiStateInput"
+      },
+      "stateTextPropertyIdentifier": "stateText"
+    },
+    "networkPort": {
+      "activeOne": {
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "networkPort"
+        }
+      }
+    },
+    "passwords": {
+      "dcc": {
+        "password": "Chipkin-DCC-42"
+      },
+      "reinitialize": {
+        "password": "Chipkin-DCC-42"
+      }
+    },
+    "rebootWindow": {
+      "activateChangesMs": 30000,
+      "coldstartMs": 60000,
+      "warmstartMs": 30000
+    },
+    "remoteWhoHasExecution": {
+      "allowedResponseNpdus": [
+        {
+          "destination": {
+            "dnet": 65535
+          }
+        },
+        {
+          "destination": {
+            "dnet": 99
+          }
+        },
+        {
+          "destination": {
+            "dadr": "01",
+            "dnet": 99
+          }
+        }
+      ],
+      "notes": [
+        "TD-side choice for the remote-network Who-Has / Who-Is rows (135.1 9.32.2.x, 9.33.2.x): remote network X = 99, source address Y = 01. The allowed response paths are the clause three: global broadcast, remote broadcast to X, the TD on X."
+      ],
+      "requestNpdu": {
+        "destination": {
+          "dnet": "globalBroadcast"
+        },
+        "source": {
+          "sadr": "01",
+          "snet": 99
+        }
+      }
+    },
+    "timeouts": {
+      "apdu": 3000,
+      "reply": 1000,
+      "segment": 1000
+    },
+    "writableTestPoints": [
+      {
+        "notes": "Setpoint; accepts any REAL (no Min_Pres_Value / Max_Pres_Value). Schedule 1 (Saffron) commands it at priority 8, so a test write goes in at priority 7 to be visible in Present_Value.",
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "analogOutput"
+        },
+        "propertyIdentifier": "presentValue",
+        "suggestedTestValue": 24,
+        "writePriority": 7
+      },
+      {
+        "notes": "Relay; 0 inactive / 1 active, else value-out-of-range.",
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "binaryOutput"
+        },
+        "propertyIdentifier": "presentValue",
+        "suggestedTestValue": 1,
+        "writePriority": 16
+      },
+      {
+        "notes": "States 1 .. 3, else value-out-of-range.",
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "multiStateOutput"
+        },
+        "propertyIdentifier": "presentValue",
+        "suggestedTestValue": 2,
+        "writePriority": 16
+      },
+      {
+        "notes": "File 1 (Ivory) Archive, BOOLEAN; not commandable (the priority is ignored). Held by the application (main.cpp SetPropertyBool); it only marks the file and changes nothing else.",
+        "objectIdentifier": {
+          "instance": 1,
+          "type": "file"
+        },
+        "propertyIdentifier": "archive",
+        "suggestedTestValue": true
+      }
+    ]
+  }
+}

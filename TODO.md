@@ -1,9 +1,10 @@
 # TODO - known gaps (each checked against the pinned stack source and/or the wire, not assumed)
 
-Stack pin: `64b2cfac5` (6.x, 2026-10-15, reports 6.0.23). Re-checked 2026-10-15
-when the pin moved from `abd4cee1` (6.0.21).
+Stack pin: `69b6249f` (6.x, reports 6.0.23). Re-checked 2026-10-26
+when the pin moved from `29b83de6` (items 2 and 4 still reproduce; item 3 is
+fixed at this pin; Wire Tests).
 
-This example is **Profile-functional** (series `docs/GLOSSARY.md`) as of 1.2.0:
+This example is **Profile-functional** (series `docs/GLOSSARY.md`) since 1.2.0:
 a landing call moves the car Simulation, and CreateObject/DeleteObject, the
 Schedule over TimeSynchronization, the Event Log over ReadRange and
 backup/restore are Wire Tests with their Failure Modes (`tests/README.md`).
@@ -33,7 +34,11 @@ after a WriteProperty of `Enable` TRUE (SimpleACK) it logs. L.13.1 asks for
 "Logging of event notifications of the local device in an Event Log object";
 today that needs an operator's write first. The README says so.
 
-### 3. The device's own broadcast notification is logged twice
+### 3. (fixed at `69b6249f`) The device's own broadcast notification is logged twice
+
+Fixed upstream (stack PR #4011, in the 6.x tip this example is pinned to). At
+`69b6249f` the Event Log Wire Test's "logged once" check passes: one record per
+transition. The record below is kept for history.
 
 Filed: [#3957](https://github.com/chipkin/cas-bacnet-stack/issues/3957). Verification found it is the stack's fault, not `common/`'s.
 Wire Test: `tests/event_log_test.py`, `[KNOWN GAP] Each transition is logged
@@ -124,9 +129,14 @@ WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - floor 11
   `Present_Value` always answers FALSE; Saffron's one exception uses the inline
   calendar-entry form. Moving Cream to `BACnetStack_AddCalendarObject` (as
   B-BC-CPP did) is open, not blocked.
-- The Peer does not receive the Lift's EventNotifications on the wire: they go
-  to Notification Class 1's one recipient, the local subnet **broadcast**, which
-  a Python Peer bound to 127.0.0.1 cannot hear on Windows. The Event Log test
-  proves they are generated (the log records the initiated notification). A
-  Recipient_List the Peer can write would need AE-CRL-B, which B-AEC does not
-  require.
+- By default the Lift's EventNotifications go to Notification Class 1's one
+  recipient, the local subnet **broadcast**, which a Python Peer bound to
+  127.0.0.1 cannot hear on Windows. The Recipient_List is writable, so
+  `tests/recipient_list_test.py` writes the Peer into it and receives the
+  alarm and its return to normal on the wire.
+- The Lift's simulated `Passenger_Alarm` flips on a timer (every 30 s, or the
+  `BAEC_TEST_PASSENGER_ALARM_SECONDS` test variable) and cannot be switched off from
+  BACnet or the console, so a test that needs the car quiet has to wait for it.
+  (ref: chipkin/chipkin-bacnet-testing-tool#615)
+- Notification Class 1's `Recipient_List` is writable (cl. 12.21) but is not kept across a
+  restart: the seeded broadcast recipient returns.

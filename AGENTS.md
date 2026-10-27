@@ -63,8 +63,8 @@ commands above.
 ## Run
 
 ```bash
-./build/BACnetExampleBAEC [--port 47808] [--deviceID 389014]   # Linux/macOS
-.\build\Release\BACnetExampleBAEC.exe [--port 47808] [--deviceID 389014]   # Windows
+./build/BACnetExampleBAEC [--port 47808] [--deviceID 389014] [--deviceName "Chipkin Example B-AEC"]   # Linux/macOS
+.\build\Release\BACnetExampleBAEC.exe [--port 47808] [--deviceID 389014] [--deviceName "Chipkin Example B-AEC"]   # Windows
 ```
 
 Interactive keys while running: `h` help, `q` quit, up/down nudge Analog Input
@@ -117,12 +117,12 @@ over the wire (no interactive key commands either - use a BACnet client).
   without a servable `Relinquish_Default`). When you copy this pattern again,
   diff every Get callback branch against B-SA's three (Real/Enumerated/
   UnsignedInteger), property by property, not just by eye.
-- `docs/property-profile-reference.md`'s generated Lift table is **incomplete**
-  relative to the required properties documented in
-  `CASBACnetStackDLL.h`'s own comment above
-  `BACnetStack_AddLiftOrEscalatorObject` (a documentation gap in the stack
-  repo, unchanged from B-EM). Trust the DLL header's doc comment; `docs/objects.json`'s
-  notes record exactly which properties this affects.
+- The stack's Lift property profile lists the six required Lift properties
+  this example serves (Car_Position, Car_Moving_Direction, Car_Door_Status,
+  Passenger_Alarm, Out_Of_Service, Fault_Signals) with no default: the
+  application must serve them. `CASBACnetStackDLL.h`'s own comment above
+  `BACnetStack_AddLiftOrEscalatorObject` says the same; `docs/objects.json`'s
+  notes record who serves each.
 - F-COVM: unchanged from B-EM - `BACnetStack_SetPropertySubscribable` on two
   properties of Analog Input 1, plus `BACnetStack_SetCOVMultipleSettings`.
 - Intrinsic alarming: unchanged from B-EM - see B-EM's AGENTS.md.

@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """B-AEC Wire Test - the Peer backs the configuration up, changes it, and restores it (DM-BR-B).
 
-    python3 tests/backup_restore_test.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/backup_restore_test.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 135-2024 L.13.1: "Ability to upload its configuration and allow it to be subsequently
 restored". The procedure is cl. 19.1: ReinitializeDevice START_BACKUP, read the files the
@@ -21,7 +21,9 @@ ReinitializeDevice must carry.
      42.5; END_BACKUP -> SimpleACK, System_Status OPERATIONAL.
   4. The changed setting: Analog Value 100 written to 7.0, Analog Value 101 deleted,
      Analog Value 102 created.
-  5. START_RESTORE -> SimpleACK; AtomicWriteFile of the backed-up image -> ACK; control:
+  5. START_RESTORE -> SimpleACK; WriteProperty File 1 File_Size = 0 -> SimpleACK and it
+     reads 0 (K.5.18; FAILURE MODE: a size over 4096 -> PROPERTY / VALUE_OUT_OF_RANGE);
+     AtomicWriteFile of the backed-up image -> ACK, File_Size reads its size; control:
      before END_RESTORE nothing has changed (100 still reads 7.0); END_RESTORE -> SimpleACK.
   6. The configuration is the backed-up one again: 100 reads 42.5, 101 exists with 1.0,
      102 is gone; Last_Restore_Time is set.
@@ -40,6 +42,8 @@ SETTING = (ANALOG_VALUE, 100)
 SECOND = (ANALOG_VALUE, 101)
 LATER = (ANALOG_VALUE, 102)
 PROPERTY_CONFIGURATION_FILES = 154
+PROPERTY_FILE_SIZE = 42
+FILE_MAX_SIZE = 4096                  # main.cpp: Ivory holds at most 4096 octets
 STEP_WAIT = 3.0
 
 
@@ -128,9 +132,24 @@ def run(workstation, args):
     record("The changed setting: 100 <- 7.0, 101 deleted, 102 created", changed and deleted and added)
     restored_before = last_restore_time(workstation, args)
 
-    # 5. Restore.
-    started, written, answer = restore(workstation, args, image)
+    # 5. Restore. K.5.18: once a restore has started, a configuration file's File_Size is
+    # writable when the image's size depends on the configuration (it does here), so a
+    # client can empty the file before writing the backed-up image (135.1 13.8.1.1 step 21).
+    started = reinitialize(workstation, args, wiretest.REINITIALIZE_START_RESTORE)
     record("START_RESTORE with the password -> SimpleACK", started.ok, started.describe())
+    wiretest.wait_until(lambda: system_status(workstation, args) != wiretest.DEVICE_STATUS_OPERATIONAL, STEP_WAIT)
+    answer = workstation.write_property(args.port, *setup.IVORY, PROPERTY_FILE_SIZE, wiretest.application_unsigned(0))
+    record("WriteProperty File 1 File_Size = 0 during the restore -> SimpleACK", answer.ok, answer.describe())
+    size = setup.read(workstation, args, setup.IVORY, PROPERTY_FILE_SIZE)
+    record("... and File_Size reads 0", size == 0, f"read {size}")
+    answer = workstation.write_property(args.port, *setup.IVORY, PROPERTY_FILE_SIZE,
+                                        wiretest.application_unsigned(FILE_MAX_SIZE + 1))
+    record("FAILURE MODE: File_Size larger than the file can hold -> PROPERTY / VALUE_OUT_OF_RANGE",
+           answer.error == (wiretest.ERROR_CLASS_PROPERTY, wiretest.ERROR_CODE_VALUE_OUT_OF_RANGE), answer.describe())
+    written, answer = write_file(workstation, args, image)
+    size = setup.read(workstation, args, setup.IVORY, PROPERTY_FILE_SIZE)
+    record("File_Size reads the image's size after AtomicWriteFile", size == len(image),
+           f"read {size}, image {len(image)}")
     record("AtomicWriteFile of the backed-up image -> ACK at position 0", written == 0,
            f"ACK position {written}" if written is not None else answer.describe())
     value = present_value(workstation, args, SETTING)

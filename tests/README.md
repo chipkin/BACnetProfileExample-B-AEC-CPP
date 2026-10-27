@@ -25,7 +25,7 @@ python3 tests/run_wire_tests.py --exe build/BACnetExampleBAEC
 
 On Windows, `--exe build\Release\BACnetExampleBAEC.exe`. It ends with
 `ALL WIRE TESTS PASSED` (exit 0) or the scripts that failed. `--port` (default
-48040) is the UDP port each script starts the controller on, one after another.
+47834) is the UDP port each script starts the controller on, one after another.
 A full run takes about two and a half minutes. Each script also runs on its
 own, with the same `--exe` and `--port`. CI (`.github/workflows/release.yml`)
 runs the suite on Linux after the smoke test.
@@ -42,7 +42,8 @@ The Peer is a Python BACnet client (`wiretest.Workstation`, with a visible
 retry - see below), never another example's binary. It plays the elevator
 management station or operator workstation of a real site. Nothing reaches
 into the example any other way. The one test-only switch is the environment
-variable `BAEC_TEST_PASSENGER_ALARM_SECONDS`, which `event_log_test.py` sets to
+variable `BAEC_TEST_PASSENGER_ALARM_SECONDS`, which `event_log_test.py` and
+`recipient_list_test.py` set to
 2 so the simulated Passenger_Alarm flips every 2 s instead of 30 s; it is not a
 command-line option and changes nothing a BACnet client can reach.
 `backup_restore_test.py` starts the controller with `--dcc-password`.
@@ -77,6 +78,26 @@ host, not refused by the example. Linux runs needed no retry.
    gives PROPERTY / READ_ACCESS_DENIED).
 5. Network Port 1's `IP_DNS_Server` (406), `FD_BBMD_Address` (418) and
    `FD_Subscription_Lifetime` (419) are each listed and read as a value.
+6. The Device's **`Database_Revision`** reads 16, its start-up value (it goes up
+   only on CreateObject / DeleteObject, which this script does not send).
+
+## `configuration_test.py` - the Device's identity is configurable at start-up
+
+Cl. 12.1.1.3 and 12.1.1.4 require the Device's Object_Identifier and Object_Name
+to be configurable (Object_Name must be unique across the internetwork).
+
+1. **No options** (the control): Device 389014 answers Who-Is, and its
+   Object_Name is the default `Chipkin Example B-AEC`.
+2. **`--deviceID 389914 --deviceName "Chipkin Example B-AEC Unit 2"`**: Who-Is,
+   ReadProperty, the ready line and a Who-Has by name all see the configured
+   instance and name; 389014 answers OBJECT / UNKNOWN_OBJECT. A WriteProperty of
+   the Device's Object_Name is refused and the name is unchanged: it changes only
+   at start-up.
+3. **Limits**: an empty or a 256-byte `--deviceName` prints a warning and keeps
+   the default; a 255-byte one is served whole.
+4. **`--help`** lists `--port`, `--deviceID`, `--deviceName`, `--dcc-password`
+   and `--xml`, the options the example reads; with `--xml` the console prints
+   each frame as an XML block.
 
 ## `elevator_test.py` - a landing call commands the car
 
@@ -148,12 +169,32 @@ The configuration is the set of created Analog Values and their values
    names File 1; AtomicReadFile returns the image (`B-AEC configuration 1`,
    `analog-value 100 42.5`, `analog-value 101 1`); END_BACKUP -> OPERATIONAL.
 4. The change: 100 <- 7.0, 101 deleted, 102 created.
-5. START_RESTORE, AtomicWriteFile of the saved image; control: 100 still 7.0
-   before END_RESTORE; END_RESTORE.
+5. START_RESTORE; File 1's `File_Size` written to 0 -> SimpleACK, reads 0
+   (K.5.18); **Failure Mode**: a `File_Size` over 4096 -> PROPERTY /
+   VALUE_OUT_OF_RANGE; AtomicWriteFile of the saved image, `File_Size` reads
+   its length; control: 100 still 7.0 before END_RESTORE; END_RESTORE.
 6. 100 is 42.5 again, 101 is back with 1.0, 102 is gone; `Last_Restore_Time`
    moved.
 7. **Failure Mode**: a restore of a file that is not an image changes nothing,
    and `Last_Restore_Time` does not move.
+
+## `recipient_list_test.py` - the Recipient_List is writable
+
+Notification Class 1 "Crimson" (cl. 12.21). A read-only Recipient_List would have
+to be the single local-broadcast entry with Process Identifier 0; this example
+seeds the subnet broadcast with Process Identifier 1, so the list is writable.
+
+1. Control: `Recipient_List` reads the default entry only (the local subnet
+   broadcast, Process Identifier 1, unconfirmed, always, every transition).
+2. WriteProperty of the default entry + this workstation (Process Identifier 2,
+   confirmed) -> SimpleACK; it reads back exactly as written.
+3. The next Passenger_Alarm transitions reach the workstation through the
+   written entry: a ConfirmedEventNotification NORMAL -> OFFNORMAL for Lift 1,
+   then the return to normal; the default broadcast is still sent (the
+   example's TX log).
+4. **Failure Mode**: a Recipient_List write that is not a list of
+   BACnetDestination is refused, and the list is unchanged.
+5. Writing the default back is accepted and reads back unchanged.
 
 ## Results
 
@@ -186,6 +227,7 @@ failed; the failing lines are in the 1.2.0 commit message.
 | M11 | ReinitializeDevice ignores the password | backup_restore | 20/23 - a wrong password starts a backup |
 | M12 | ReadRange not enabled | event_log | 8/12 - ReadRange Rejected |
 | M13 | Lift 1's alarm algorithm not armed | event_log | 10/12 - no notification is logged |
+| M14 | Recipient_List not made writable | recipient_list | 4/10 - the writes are refused (PROPERTY / WRITE_ACCESS_DENIED), no alarm reaches the workstation |
 
 M10 needed two test fixes before it failed: the first form (header check
 removed) is still refused by the per-line check, so it removed nothing; and

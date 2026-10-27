@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """B-AEC Wire Test - a landing call commands the elevator, and the car answers it.
 
-    python3 tests/elevator_test.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/elevator_test.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 135-2024 L.13.1: "A B-AEC device performs control of elevators. It supports the
 modification and commanding of its elevator objects by another device." The Peer writes

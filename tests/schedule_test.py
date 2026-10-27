@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """B-AEC Wire Test - the Peer sets the controller's clock, and the Schedule drives the output on it.
 
-    python3 tests/schedule_test.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/schedule_test.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 135-2024 L.13.1: "Ability to schedule internal values, based on date and time"
 (SCHED-I-B) and "Ability to synchronize its internal clock upon request" (DM-TS-B).

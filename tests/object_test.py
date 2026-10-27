@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """B-AEC Wire Test - another device creates, modifies and deletes objects (DM-OCD-B).
 
-    python3 tests/object_test.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/object_test.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 135-2024 L.13.1 Data Sharing: "Ability to allow creation, deletion, and modification of
 some or all of its BACnet objects by another device". Analog Value is the one creatable

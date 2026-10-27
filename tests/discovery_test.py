@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """B-AEC discovery: read every property the advanced elevator controller says it has, the way a client does.
 
-    python3 tests/discovery_test.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/discovery_test.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 What a BACnet client such as Chipkin BACnet Explorer does when it discovers a device,
 done over the wire from outside the example:
@@ -58,6 +58,19 @@ EXPECTED_OBJECTS = [DEVICE,
                     (10, 1),                                         # "Ivory" - File object type: 10
                     ]
 
+# Database_Revision (cl. 12.11): the stack keeps it, counting the object additions main.cpp
+# makes at start-up - it reads 16 then (docs/PICS.md) - and adds 1 for each accepted
+# CreateObject or DeleteObject afterwards. This test creates and deletes nothing, and each
+# script starts a fresh controller, so it reads the start-up value.
+PROPERTY_DATABASE_REVISION = 155
+EXPECTED_DATABASE_REVISION = 16
+
+# Analog Input 1's COV_Increment (cl. 12.2.16): required because the object supports COV
+# reporting (cl. 12.2 footnote 2), as main.cpp serves it.
+BRONZE = (wiretest.OBJECT_TYPE_ANALOG_INPUT, 1)
+PROPERTY_COV_INCREMENT = 22
+EXPECTED_COV_INCREMENT = 1.0
+
 # The four properties cl. 12.1.1.4.1 says Property_List does not contain.
 PROPERTY_OBJECT_TYPE = 79
 NOT_IN_PROPERTY_LIST = [wiretest.PROPERTY_OBJECT_IDENTIFIER, wiretest.PROPERTY_OBJECT_NAME,
@@ -106,8 +119,8 @@ def parser():
     arguments = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     arguments.add_argument("--exe", default=str(wiretest.default_exe(REPOSITORY, "BACnetExampleBAEC")),
                            help="path to BACnetExampleBAEC (default: build/BACnetExampleBAEC)")
-    arguments.add_argument("--port", type=int, default=48040,
-                           help="the advanced elevator controller's UDP port (default 48040)")
+    arguments.add_argument("--port", type=int, default=47834,
+                           help="the advanced elevator controller's UDP port (default 47834)")
     return arguments
 
 
@@ -205,6 +218,17 @@ def main():
             record(f"Network Port 1 {name} ({property_identifier}): listed in Property_List and reads as a value "
                    f"(issue {issue})", listed and failure is None,
                    "not in Property_List" if not listed else (failure or ""))
+
+        database_revision = client.read_property(args.port, *DEVICE, PROPERTY_DATABASE_REVISION, timeout=2.0)
+        record(f"Device Database_Revision reads {EXPECTED_DATABASE_REVISION} at start-up (docs/PICS.md)",
+               is_value(database_revision) and database_revision.value == EXPECTED_DATABASE_REVISION,
+               outcome(database_revision))
+
+        record("Analog Input 1 lists COV_Increment in its Property_List (it supports COV reporting, "
+               "cl. 12.2 footnote 2)", PROPERTY_COV_INCREMENT in property_lists.get(BRONZE, []))
+        cov_increment = client.read_property(args.port, *BRONZE, PROPERTY_COV_INCREMENT, timeout=2.0)
+        record(f"Analog Input 1 COV_Increment reads {EXPECTED_COV_INCREMENT}",
+               is_value(cov_increment) and cov_increment.value == EXPECTED_COV_INCREMENT, outcome(cov_increment))
     finally:
         client.close()
         device.stop()

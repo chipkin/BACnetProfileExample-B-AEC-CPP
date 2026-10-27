@@ -78,7 +78,8 @@
 // Each object has a colour name (the convention shared across this example
 // series):
 //
-//     Device 389014              "Chipkin Example B-AEC"      (instance configurable with --deviceID)
+//     Device 389014              "Chipkin Example B-AEC"      (instance configurable with --deviceID,
+//                                                              Object_Name with --deviceName)
 //     Analog Input  1            "Bronze"       (REAL, degrees Celsius; read-only)
 //     Binary Input  1            "Emerald"      (active / inactive; read-only)
 //     Multi-State Input 1        "Hot Pink"     (state 1..3; read-only)
@@ -126,7 +127,7 @@
 // key B-LS claims for its own remote-discovery demo). There is no key to fire
 // the Lift's Passenger_Alarm alarm - it is simulated on a 30-second timer
 // instead (BAEC_TEST_PASSENGER_ALARM_SECONDS shortens it for the Wire Tests).
-// Command line: --port <n>, --deviceID <n>, --dcc-password <string>.
+// Command line: --port <n>, --deviceID <n>, --deviceName <text>, --dcc-password <string>, --xml.
 //
 // All the UDP/stack plumbing lives in common/CASExampleHelper so this file can
 // stay focused on the BACnet logic.
@@ -157,7 +158,7 @@ using namespace CASBACnetStackExampleConstants;
 // 1. Example + device configuration
 // -----------------------------------------------------------------------------
 static const char* APP_NAME = "BACnet B-AEC (Advanced Elevator Controller) Example - C++";
-static const char* APP_VERSION = "1.2.0";
+static const char* APP_VERSION = "1.3.0";
 
 // The device instance. BACnet requires this to be configurable, so it defaults
 // to 389014 and can be overridden on the command line with --deviceID.
@@ -177,20 +178,25 @@ static uint32_t g_deviceInstance = 389014;
 // Update VENDOR_NAME below to match.
 static const uint32_t VENDOR_IDENTIFIER = 389;
 
-// This device's Object_Name. CHANGE THIS: Object_Name MUST BE UNIQUE ACROSS THE
-// BACNET INTERNETWORK - two devices answering with the same Object_Name is a
-// spec violation, and nothing on the wire flags it as an error (see TUTORIAL.md's
-// silent-failure table). Here it is a compile-time constant, which is fine for a
-// single tutorial instance; a real product must make it per-unit configurable -
-// from a serial number, DIP switches, a config file, or a `--deviceName`
-// command-line argument - not hard-coded the way this example does it.
+// This device's Object_Name - the DEFAULT one. Object_Name MUST BE UNIQUE ACROSS
+// THE BACNET INTERNETWORK (cl. 12.1.1.4) - two devices answering with the same
+// Object_Name is a spec violation, and nothing on the wire flags it as an error
+// (see TUTORIAL.md's silent-failure table). So it must be per-unit configurable,
+// exactly like the instance: this example takes it at start-up with
+// --deviceName <text> (common/ ParseDeviceNameArg, read into g_deviceName in
+// main()); DEVICE_NAME is only what a unit announces when nobody configured it.
+// In your product, configure the name per unit (a serial number, DIP switches, a
+// config file, or this argument) and change the default below to something that
+// says "not configured yet".
 static const char* DEVICE_NAME = "Chipkin Example B-AEC";
+static const char* g_deviceName = DEVICE_NAME; // --deviceName, or the default
+// The Device object's Description. Keep it under 255 characters: the stack
+// holds at most STACK_OPTION_MAX_CHARACTER_STRING_SIZE - 1 (255) octets from a
+// callback and refuses a longer value, so the property would read as "".
 static const char* DEVICE_DESCRIPTION =
     "Chipkin CAS BACnet Stack example - B-AEC (Advanced Elevator Controller) profile. "
-    "DS-RP/RPM/WP/WPM-B, DS-COV-B, DS-COVM-B, intrinsic alarming "
-    "(AE-N-I-B / AE-ACK-B / AE-INFO-B), AE-EL-I-B (Event Log), SCHED-I-B (Schedule), "
-    "DM-DDB-A, DM-DCC-B, DM-TS-B, DM-RD-B, DM-OCD-B (CreateObject/DeleteObject), "
-    "DM-BR-B (Backup/Restore). Commands three outputs and the Elevator Group's landing calls."; // CHANGE THIS: what YOUR device actually is.
+    "Commands three outputs and the landing calls, creates and deletes Analog Values, "
+    "keeps an Event Log, runs a Schedule, and backs up and restores its configuration."; // CHANGE THIS: what YOUR device actually is.
 
 // Device identity strings (read by clients, and used to populate I-Am).
 static const char* VENDOR_NAME = "Chipkin Automation Systems"; // CHANGE THIS: must match VENDOR_IDENTIFIER above.
@@ -331,7 +337,7 @@ struct CreatedAnalogValue {
     bool inUse;
     uint32_t objectInstance;
     float presentValue; // Present_Value has NO stack default for a non-commandable Analog Value
-                         // (property-profile-reference.md) - this file owns it entirely.
+                         // (the stack's property profile) - this file owns it entirely.
 };
 static CreatedAnalogValue g_createdAnalogValues[MAX_CREATED_ANALOG_VALUES];
 
@@ -372,6 +378,14 @@ static uint16_t g_bacnetIpUdpPort = 47808;
 // value: a SubscribeCOVPropertyMultiple naming Present_Value AND Status_Flags
 // fires one multi-property notification when this changes.
 static float g_analogInput1Value = 21.5f;
+
+// Analog Input 1's COV_Increment (cl. 12.2.16): the smallest Present_Value change
+// that sends a COV notification to a SubscribeCOV subscriber. Analog Input 1
+// supports COV reporting, so cl. 12.2 footnote 2 REQUIRES this property; the stack
+// leaves it absent unless the application enables it (see the setup in main()).
+// 1.0 deg C: each up/down nudge (1.1) notifies. Not writable.
+static const uint32_t PROPERTY_IDENTIFIER_COV_INCREMENT = 22;
+static const float ANALOG_INPUT_COV_INCREMENT = 1.0f;
 
 // -----------------------------------------------------------------------------
 // F-ELEVATOR: object-type / property-identifier numbers not already in
@@ -606,11 +620,16 @@ static const uint8_t NC_PRIORITY_TO_NORMAL = 200;
 // Where Mauve's alarms are sent. See B-AAC's main.cpp for the full rationale -
 // this example seeds the ADDRESS form, defaulting to the LOCAL SUBNET BROADCAST
 // with UNCONFIRMED notifications, so any BACnet client on the subnet sees the
-// alarm without us knowing its address ahead of time. Unlike B-AAC (AE-CRL-B),
-// this profile's Recipient_List is NOT made writable (out of scope for B-EC's
-// required BIBBs) - so the recipient seeded here is the only one, for the life
-// of the process.
+// alarm without us knowing its address ahead of time. This entry is the DEFAULT:
+// the Recipient_List is also WRITABLE (see main()), so a management station can
+// redirect the alarms at run time. AE-CRL-B is not a required BIBB here, but a
+// READ-ONLY Recipient_List (in a device without a Notification Forwarder) would
+// have to be the one entry cl. 12.21 defines - local broadcast (no MAC address),
+// Process Identifier 0 - and this default is a subnet-broadcast address with
+// Process Identifier 1. A written list lives for the life of the process, like
+// every other value this example holds; a restart brings back this default.
 static const uint32_t RECIPIENT_PROCESS_IDENTIFIER = 1;
+static const uint32_t PROPERTY_IDENTIFIER_RECIPIENT_LIST = 102;
 static const bool RECIPIENT_USE_BROADCAST = true;
 static uint8_t RECIPIENT_IP[4] = { 0, 0, 0, 0 };  // used when not broadcasting
 
@@ -750,6 +769,12 @@ bool GetPropertyReal(const uint32_t deviceInstance, const uint16_t objectType,
         // NOT directly from a slow/blocking device: this callback runs on the
         // BACnetStack_Tick() thread, so blocking it delays all BACnet processing.
         *value = g_analogInput1Value;
+        return true;
+    }
+    if (objectType == OBJECT_TYPE_ANALOG_INPUT &&
+        objectInstance == ANALOG_INPUT_INSTANCE &&
+        propertyIdentifier == PROPERTY_IDENTIFIER_COV_INCREMENT) {
+        *value = ANALOG_INPUT_COV_INCREMENT;
         return true;
     }
     // F-OUTPUTS (NEW vs B-EM): Analog Output 1 (Chartreuse) - commandable. Serve
@@ -1001,7 +1026,7 @@ bool GetPropertyUnsignedInteger(const uint32_t deviceInstance, const uint16_t ob
         }
     }
     // DM-BR-B: Ivory (File 1) - File_Size is REQUIRED with no stack default
-    // (property-profile-reference.md: "no default...value-not-initialized
+    // (the stack's property profile: "no default...value-not-initialized
     // until a callback or WriteProperty supplies one"). (The read-access-denied
     // B-ACC-CPP once saw here was stack #2152, closed.)
     if (objectType == OBJECT_TYPE_FILE && objectInstance == FILE_INSTANCE &&
@@ -1143,10 +1168,13 @@ static bool ReturnCharacterString(const char* text, char* value,
                                   const uint32_t maxElementCount,
                                   uint8_t* encodingType) {
     uint32_t length = (uint32_t)strlen(text);
-    if (length > maxElementCount) {
+    // The stack offers a buffer of maxElementCount octets but holds at most
+    // maxElementCount - 1 (#2997): a value of exactly maxElementCount is refused
+    // and the property reads as an empty string.
+    if (maxElementCount > 0 && length >= maxElementCount) {
         // Truncate SILENTLY to fit the stack's buffer - see B-AAC's main.cpp for
         // the full explanation of when this matters (STACK_OPTION_TARGET_EMBEDDED).
-        length = maxElementCount;
+        length = maxElementCount - 1;
     }
     memcpy(value, text, length);
     *valueElementCount = length;
@@ -1191,7 +1219,7 @@ bool GetPropertyCharString(const uint32_t deviceInstance, const uint16_t objectT
     // Object_Name - the colour name for each object.
     if (propertyIdentifier == PROPERTY_IDENTIFIER_OBJECT_NAME) {
         if (objectType == OBJECT_TYPE_DEVICE && objectInstance == g_deviceInstance) {
-            return ReturnCharacterString(DEVICE_NAME, value, valueElementCount, maxElementCount, encodingType);
+            return ReturnCharacterString(g_deviceName, value, valueElementCount, maxElementCount, encodingType);
         }
         if (objectType == OBJECT_TYPE_ANALOG_INPUT && objectInstance == ANALOG_INPUT_INSTANCE) {
             return ReturnCharacterString("Bronze", value, valueElementCount, maxElementCount, encodingType);
@@ -1229,6 +1257,21 @@ bool GetPropertyCharString(const uint32_t deviceInstance, const uint16_t objectT
         }
         if (objectType == OBJECT_TYPE_NOTIFICATION_CLASS && objectInstance == NOTIFICATION_CLASS_INSTANCE) {
             return ReturnCharacterString("Crimson", value, valueElementCount, maxElementCount, encodingType);
+        }
+        // AE-EL-I-B, SCHED-I-B and DM-BR-B objects (NEW vs B-EC). Without these the
+        // stack answers its default name ("Object 25,1" and so on), not the name
+        // README, docs/PICS.md and docs/objects.json give.
+        if (objectType == OBJECT_TYPE_EVENT_LOG && objectInstance == EVENT_LOG_INSTANCE) {
+            return ReturnCharacterString("Beige", value, valueElementCount, maxElementCount, encodingType);
+        }
+        if (objectType == OBJECT_TYPE_SCHEDULE && objectInstance == SCHEDULE_INSTANCE) {
+            return ReturnCharacterString("Saffron", value, valueElementCount, maxElementCount, encodingType);
+        }
+        if (objectType == OBJECT_TYPE_CALENDAR && objectInstance == CALENDAR_INSTANCE) {
+            return ReturnCharacterString("Cream", value, valueElementCount, maxElementCount, encodingType);
+        }
+        if (objectType == OBJECT_TYPE_FILE && objectInstance == FILE_INSTANCE) {
+            return ReturnCharacterString("Ivory", value, valueElementCount, maxElementCount, encodingType);
         }
     }
 
@@ -1647,7 +1690,11 @@ bool SetPropertyEnumerated(const uint32_t deviceInstance, const uint16_t objectT
     return false;
 }
 
-// UNSIGNED write - Multi-State Output 1 (Indigo) Present_Value (state 1..3).
+// DM-BR-B: resize Ivory (File 1); defined with the File I/O callbacks below.
+static bool SetIvoryFileSize(const uint32_t newSize, uint32_t* errorCode);
+
+// UNSIGNED write - Multi-State Output 1 (Indigo) Present_Value (state 1..3) and
+// File 1 (Ivory) File_Size.
 bool SetPropertyUnsignedInteger(const uint32_t deviceInstance, const uint16_t objectType,
                                 const uint32_t objectInstance, const uint32_t propertyIdentifier,
                                 const uint32_t value, const bool useArrayIndex,
@@ -1669,6 +1716,15 @@ bool SetPropertyUnsignedInteger(const uint32_t deviceInstance, const uint16_t ob
         printf("WriteProperty: Multi-State Output %u (Indigo) <- state %u @ priority %u\n",
                objectInstance, value, EffectivePriority(priority));
         return true;
+    }
+    // DM-BR-B: Ivory (File 1)'s File_Size. Ivory is a writable STREAM_ACCESS file,
+    // so File_Size is writable (cl. 12.13.6), and K.5.18 needs it during a restore:
+    // the configuration image's size changes with the configuration (one line per
+    // created Analog Value), so a client restoring an image of a different size
+    // writes File_Size = 0 first.
+    if (objectType == OBJECT_TYPE_FILE && objectInstance == FILE_INSTANCE &&
+        propertyIdentifier == PROPERTY_IDENTIFIER_FILE_SIZE) {
+        return SetIvoryFileSize(value, errorCode);
     }
     return false;
 }
@@ -1982,6 +2038,25 @@ bool WriteFile(const uint32_t deviceInstance, const uint32_t fileInstance, const
     return true;
 }
 
+// WriteProperty File_Size (cl. 12.13.6): a smaller value truncates the file at that
+// position, 0 deletes all of its data (the File object stays), and a larger value
+// expands it with zero octets (the new octets' value is a local matter). Ivory holds
+// at most FILE_MAX_SIZE octets; a larger size is refused with VALUE_OUT_OF_RANGE.
+// Any change also updates Modification_Date.
+static bool SetIvoryFileSize(const uint32_t newSize, uint32_t* errorCode) {
+    if (newSize > FILE_MAX_SIZE) {
+        *errorCode = ERROR_CODE_VALUE_OUT_OF_RANGE;
+        return false;
+    }
+    if (newSize > g_fileDataLength) {
+        memset(g_fileData + g_fileDataLength, 0, newSize - g_fileDataLength);
+    }
+    g_fileDataLength = newSize;
+    ReadDeviceDateTime(&g_fileModificationDate);
+    printf("WriteProperty: File 1 (Ivory) File_Size <- %u\n", newSize);
+    return true;
+}
+
 // THE CONFIGURATION IMAGE (DM-BR-B, L.13.1: "Ability to upload its configuration
 // and allow it to be subsequently restored"). What this device holds that another
 // device configured is the set of Analog Values a client created (DM-OCD-B) and
@@ -2266,11 +2341,18 @@ int main(int argc, char** argv) {
     }
 
     // --- Command line + version --------------------------------------------
-    if (CASExampleHelper::HandleHelpAndVersionArgs(argc, argv, APP_NAME, APP_VERSION)) {
+    // The help lists exactly the options this example reads: --dcc-password (a
+    // B-AEC executes DeviceCommunicationControl and ReinitializeDevice, including
+    // backup and restore), --deviceName and --xml (below).
+    if (CASExampleHelper::HandleHelpAndVersionArgs(argc, argv, APP_NAME, APP_VERSION,
+                                                   true,    // --dcc-password
+                                                   true)) { // --deviceName
         return 0;
     }
     const uint16_t port = CASExampleHelper::ParsePortArg(argc, argv, 47808);
     g_deviceInstance = CASExampleHelper::ParseDeviceIdArg(argc, argv, g_deviceInstance);
+    g_deviceName = CASExampleHelper::ParseDeviceNameArg(argc, argv, DEVICE_NAME);
+    CASExampleHelper::ParseXmlLogArg(argc, argv); // --xml: dump every RX/TX frame as XML instead of one line (off by default)
     g_dccPassword = CASExampleHelper::ParseDccPasswordArg(argc, argv, DEFAULT_DCC_PASSWORD);
     CASExampleHelper::PrintVersion(APP_NAME, APP_VERSION);
     if (g_dccPassword[0] != '\0') {
@@ -2588,6 +2670,13 @@ int main(int argc, char** argv) {
         printf("Error: Failed to enable State_Text on Multi-State Input 1 (Hot Pink).\n");
         return 1;
     }
+    // Analog Input 1 (Bronze) supports COV reporting (DS-COV-B), so its COV_Increment
+    // is required (cl. 12.2 footnote 2); GetPropertyReal serves the value.
+    if (!BACnetStack_SetPropertyEnabled(g_deviceInstance, OBJECT_TYPE_ANALOG_INPUT,
+                                        ANALOG_INPUT_INSTANCE, PROPERTY_IDENTIFIER_COV_INCREMENT, true)) {
+        printf("Error: Failed to enable COV_Increment on Analog Input 1 (Bronze).\n");
+        return 1;
+    }
 
     // --- F-OUTPUTS (NEW vs B-EM): make the three output objects commandable --
     // See B-SA-CPP's main.cpp for why these calls matter for Analog/Binary/
@@ -2722,8 +2811,15 @@ int main(int argc, char** argv) {
         printf("Error: could not seed the Notification Class recipient (Crimson).\n");
         return 1;
     }
-    // Note: unlike B-AAC (AE-CRL-B), Recipient_List is NOT made writable here -
-    // AE-CRL-B is not a required BIBB for this profile.
+    // ... and make Crimson's Recipient_List WRITABLE. The stack decodes and stores
+    // a written BACnetDestination list itself (it is a stack-held property, so no
+    // Set callback is needed). Cl. 12.21: a read-only list would have to be the
+    // single unconfirmed local-broadcast entry with Process Identifier 0.
+    if (!BACnetStack_SetPropertyWritable(g_deviceInstance, OBJECT_TYPE_NOTIFICATION_CLASS,
+                                         NOTIFICATION_CLASS_INSTANCE, PROPERTY_IDENTIFIER_RECIPIENT_LIST, true)) {
+        printf("Error: could not make Notification Class 1 (Crimson) Recipient_List writable.\n");
+        return 1;
+    }
 
     // Arm an intrinsic ChangeOfState (boolean) algorithm on Lift 1 (Mauve)'s
     // Passenger_Alarm: alarmValue=true means "Passenger_Alarm == true is the
@@ -2753,7 +2849,7 @@ int main(int argc, char** argv) {
     printf("FYI: Device %u (\"%s\") ready. Vendor ID %u. Accepts WriteProperty to "
            "Chartreuse/Fuchsia/Indigo and Landing_Call_Control on Maroon. Press "
            "'d' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.\n",
-           g_deviceInstance, DEVICE_NAME, VENDOR_IDENTIFIER);
+           g_deviceInstance, g_deviceName, VENDOR_IDENTIFIER);
 
     {
         const std::string testAlarmSeconds = EnvironmentVariable(TEST_PASSENGER_ALARM_SECONDS_VARIABLE);

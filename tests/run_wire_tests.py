@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """Run every B-AEC Wire Test, one after another, and report one result.
 
-    python3 tests/run_wire_tests.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/run_wire_tests.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 Exit code 0 = every check in every script passed.
 """
@@ -18,15 +18,15 @@ sys.path.insert(0, str(REPOSITORY))
 
 import wiretest  # noqa: E402  (the vendored harness at the repository root)
 
-SCRIPTS = ["discovery_test.py", "elevator_test.py", "object_test.py", "schedule_test.py",
-           "event_log_test.py", "backup_restore_test.py"]
+SCRIPTS = ["discovery_test.py", "configuration_test.py", "elevator_test.py", "object_test.py", "schedule_test.py",
+           "event_log_test.py", "backup_restore_test.py", "recipient_list_test.py"]
 
 
 def main():
     arguments = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     arguments.add_argument("--exe", default=str(wiretest.default_exe(REPOSITORY, "BACnetExampleBAEC")),
                            help="path to BACnetExampleBAEC (default: build/BACnetExampleBAEC)")
-    arguments.add_argument("--port", type=int, default=48040, help="the advanced elevator controller's UDP port (default 48040)")
+    arguments.add_argument("--port", type=int, default=47834, help="the advanced elevator controller's UDP port (default 47834)")
     args = arguments.parse_args()
 
     outcomes = []

@@ -3,7 +3,7 @@
 # Public-domain example code (CC0) - see ../LICENSE.
 """B-AEC Wire Test - the Event Log captures the elevator's own alarms, read back with ReadRange.
 
-    python3 tests/event_log_test.py [--exe build/BACnetExampleBAEC] [--port 48040]
+    python3 tests/event_log_test.py [--exe build/BACnetExampleBAEC] [--port 47834]
 
 135-2024 L.13.1: "Logging of event notifications of the local device in an Event Log
 object" (AE-EL-I-B). Lift 1 "Mauve" alarms on its Passenger_Alarm (an intrinsic
@@ -18,8 +18,8 @@ timer that the test-only BAEC_TEST_PASSENGER_ALARM_SECONDS=2 shortens to 2 s. Ev
      grows, and ReadRange of Log_Buffer returns Record_Count records, among them an event
      notification from Device 389014 for Lift 1 whose to-state matches Passenger_Alarm.
   4. ReadRange by position (index 1, count 1) returns exactly one record.
-  5. Each transition is logged once - the device logs its own broadcast notification a
-     second time when it hears it back (stack #3957): a [KNOWN GAP].
+  5. Each transition is logged once, not again when the device hears its own broadcast
+     back (stack #3957, fixed at the 6.x 69b6249f pin).
   6. The Peer writes Enable FALSE: the next transition is not logged.
 """
 import sys
@@ -109,9 +109,9 @@ def run(workstation, args):
 
     # 5. Logged once per transition.
     stamps = [entry["notification"] for entry in logged]
-    known_gap("Each transition is logged once, not again when the device hears its own broadcast",
-              len(stamps) == 1, f"stack #3957: {len(stamps)} records of the one transition "
-              f"(process identifiers {[entry['process_identifier'] for entry in logged]})")
+    record("Each transition is logged once, not again when the device hears its own broadcast",
+           len(stamps) == 1, f"{len(stamps)} records of the one transition "
+           f"(process identifiers {[entry['process_identifier'] for entry in logged]})")
 
     # 6. Disable: the next transition is not logged.
     answer = workstation.write_property(args.port, *setup.BEIGE, setup.PROPERTY_ENABLE,

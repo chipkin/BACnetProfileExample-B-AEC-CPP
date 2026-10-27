@@ -1,0 +1,2773 @@
+{
+  "capturedAt": "2026-10-22T08:00:10.194Z",
+  "derivedBibbs": [
+    "AE-ACK-B",
+    "AE-INFO-B",
+    "DM-BR-B (partial)",
+    "DM-DCC-B",
+    "DM-DDB-B",
+    "DM-DOB-B",
+    "DM-OCD-B",
+    "DM-RD-B",
+    "DM-TS-B",
+    "DS-COV-B",
+    "DS-RP-B",
+    "DS-RPM-B",
+    "DS-RR-B",
+    "DS-WP-B",
+    "DS-WPM-B"
+  ],
+  "errors": [],
+  "iam": {
+    "deviceInstance": 389014,
+    "maxApdu": 1476,
+    "segmentation": "both",
+    "vendorId": 389
+  },
+  "identity": {
+    "applicationSoftwareVersion": "1.2.0",
+    "firmwareRevision": "6.0.23.0",
+    "modelName": "CAS BACnet Stack Example - B-AEC",
+    "objectName": "Chipkin Example B-AEC",
+    "protocolRevision": 30,
+    "protocolVersion": 1,
+    "vendorId": 389,
+    "vendorName": "Chipkin Automation Systems"
+  },
+  "maxApduLengthAccepted": 1476,
+  "objectTypesSupported": [
+    "analogInput",
+    "analogOutput",
+    "analogValue",
+    "binaryInput",
+    "binaryOutput",
+    "calendar",
+    "device",
+    "file",
+    "multiStateInput",
+    "multiStateOutput",
+    "notificationClass",
+    "schedule",
+    "eventLog",
+    "positiveIntegerValue",
+    "networkPort",
+    "elevatorGroup",
+    "escalator",
+    "lift"
+  ],
+  "objects": [
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "analogInput"
+      },
+      "properties": {
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "analogInput"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Bronze"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "analogInput",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "real",
+            "value": 21.5
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "units": {
+          "status": "ok",
+          "value": {
+            "name": "degreesCelsius",
+            "tag": "enumerated",
+            "value": 62
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "outOfService",
+        "presentValue",
+        "statusFlags",
+        "units"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "analogOutput"
+      },
+      "properties": {
+        "currentCommandPriority": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for analogOutput:1 currentCommandPriority has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"OptionalUnsigned\":{\"Unsigned\":{\"_text\":\"8\",\"_datatype\":\"2\",\"_datatypeLabel\":\"UnsignedInteger\",\"_value\":\"8\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for analogOutput:1 currentCommandPriority has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"OptionalUnsigned\":{\"Unsigned\":{\"_text\":\"8\",\"_datatype\":\"2\",\"_datatypeLabel\":\"UnsignedInteger\",\"_value\":\"8\"}}}",
+          "status": "error"
+        },
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "analogOutput"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Chartreuse"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "analogOutput",
+            "tag": "enumerated",
+            "value": 1
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "real",
+            "value": 20
+          }
+        },
+        "priorityArray": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "real",
+                "value": 20
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              }
+            ]
+          }
+        },
+        "relinquishDefault": {
+          "status": "ok",
+          "value": {
+            "tag": "real",
+            "value": 20
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "units": {
+          "status": "ok",
+          "value": {
+            "name": "degreesCelsius",
+            "tag": "enumerated",
+            "value": 62
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "outOfService",
+        "presentValue",
+        "priorityArray",
+        "relinquishDefault",
+        "statusFlags",
+        "units",
+        "currentCommandPriority"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "binaryInput"
+      },
+      "properties": {
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "binaryInput"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Emerald"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "binaryInput",
+            "tag": "enumerated",
+            "value": 3
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "polarity": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "name": "active",
+            "tag": "enumerated",
+            "value": 1
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "outOfService",
+        "polarity",
+        "presentValue",
+        "statusFlags"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "binaryOutput"
+      },
+      "properties": {
+        "currentCommandPriority": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for binaryOutput:1 currentCommandPriority has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"OptionalUnsigned\":{\"NULL\":{\"_datatype\":\"0\",\"_datatypeLabel\":\"Null\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for binaryOutput:1 currentCommandPriority has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"OptionalUnsigned\":{\"NULL\":{\"_datatype\":\"0\",\"_datatypeLabel\":\"Null\"}}}",
+          "status": "error"
+        },
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "binaryOutput"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Fuchsia"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "binaryOutput",
+            "tag": "enumerated",
+            "value": 4
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "polarity": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "name": "inactive",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "priorityArray": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              }
+            ]
+          }
+        },
+        "relinquishDefault": {
+          "status": "ok",
+          "value": {
+            "name": "inactive",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "outOfService",
+        "polarity",
+        "presentValue",
+        "priorityArray",
+        "relinquishDefault",
+        "statusFlags",
+        "currentCommandPriority"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "calendar"
+      },
+      "properties": {
+        "dateList": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": []
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "calendar"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Cream"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "calendar",
+            "tag": "enumerated",
+            "value": 6
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        }
+      },
+      "propertyList": [
+        "dateList",
+        "presentValue"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 389014,
+        "type": "device"
+      },
+      "properties": {
+        "activeCovMultipleSubscriptions": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": []
+          }
+        },
+        "activeCovSubscriptions": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": []
+          }
+        },
+        "apduSegmentTimeout": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 5000
+          }
+        },
+        "apduTimeout": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 10000
+          }
+        },
+        "applicationSoftwareVersion": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "1.2.0"
+          }
+        },
+        "backupAndRestoreState": {
+          "status": "ok",
+          "value": {
+            "name": "idle",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "backupFailureTimeout": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 120
+          }
+        },
+        "backupPreparationTime": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 5
+          }
+        },
+        "configurationFiles": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "file"
+            }
+          }
+        },
+        "databaseRevision": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 16
+          }
+        },
+        "description": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Chipkin CAS BACnet Stack example - B-AEC (Advanced Elevator Controller) profile. Commands three outputs and the landing calls, creates and deletes Analog Values, keeps an Event Log, runs a Schedule, and backs up and restores its configuration."
+          }
+        },
+        "deviceAddressBinding": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": []
+          }
+        },
+        "firmwareRevision": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "6.0.23.0"
+          }
+        },
+        "lastRestoreTime": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for device:389014 lastRestoreTime has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"TimeStamp\":{\"Datetime\":{\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"Time\":{\"_text\":\"255:255:255.255\",\"_datatype\":\"11\",\"_datatypeLabel\":\"Time\",\"_hour\":\"255\",\"_hundredthSeconds\":\"255\",\"_minute\":\"255\",\"_second\":\"255\"}}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for device:389014 lastRestoreTime has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"TimeStamp\":{\"Datetime\":{\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"Time\":{\"_text\":\"255:255:255.255\",\"_datatype\":\"11\",\"_datatypeLabel\":\"Time\",\"_hour\":\"255\",\"_hundredthSeconds\":\"255\",\"_minute\":\"255\",\"_second\":\"255\"}}}}",
+          "status": "error"
+        },
+        "localDate": {
+          "status": "ok",
+          "value": {
+            "tag": "date",
+            "value": {
+              "day": 22,
+              "month": 10,
+              "weekday": 4,
+              "year": 2026
+            }
+          }
+        },
+        "localTime": {
+          "status": "ok",
+          "value": {
+            "tag": "time",
+            "value": {
+              "hour": 1,
+              "hundredths": 0,
+              "minute": 0,
+              "second": 11
+            }
+          }
+        },
+        "maxApduLengthAccepted": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1476
+          }
+        },
+        "maxSegmentsAccepted": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 16
+          }
+        },
+        "modelName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "CAS BACnet Stack Example - B-AEC"
+          }
+        },
+        "numberOfApduRetries": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 389014,
+              "type": "device"
+            }
+          }
+        },
+        "objectList": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "analogInput"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "analogOutput"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "binaryInput"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "binaryOutput"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "calendar"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 389014,
+                  "type": "device"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "file"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "multiStateInput"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "multiStateOutput"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "notificationClass"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "schedule"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "eventLog"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "positiveIntegerValue"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "networkPort"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "elevatorGroup"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "escalator"
+                }
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "lift"
+                }
+              }
+            ]
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Chipkin Example B-AEC"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "device",
+            "tag": "enumerated",
+            "value": 8
+          }
+        },
+        "protocolObjectTypesSupported": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              false,
+              true,
+              false,
+              true,
+              false,
+              true,
+              false,
+              false,
+              true,
+              true,
+              true,
+              false,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              true,
+              true,
+              true,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "protocolRevision": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 30
+          }
+        },
+        "protocolServicesSupported": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              true,
+              false,
+              true,
+              false,
+              false,
+              true,
+              true,
+              true,
+              false,
+              false,
+              true,
+              true,
+              true,
+              false,
+              true,
+              true,
+              true,
+              true,
+              false,
+              false,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false,
+              true,
+              true,
+              false,
+              true,
+              false,
+              false,
+              true,
+              true,
+              true,
+              true,
+              false,
+              false,
+              false,
+              true,
+              false,
+              true,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "protocolVersion": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "restoreCompletionTime": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 5
+          }
+        },
+        "restorePreparationTime": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 5
+          }
+        },
+        "segmentationSupported": {
+          "status": "ok",
+          "value": {
+            "name": "segmentedBoth",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "systemStatus": {
+          "status": "ok",
+          "value": {
+            "name": "operational",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "vendorIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 389
+          }
+        },
+        "vendorName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Chipkin Automation Systems"
+          }
+        }
+      },
+      "propertyList": [
+        "apduSegmentTimeout",
+        "apduTimeout",
+        "applicationSoftwareVersion",
+        "description",
+        "deviceAddressBinding",
+        "firmwareRevision",
+        "localDate",
+        "localTime",
+        "maxApduLengthAccepted",
+        "modelName",
+        "numberOfApduRetries",
+        "objectList",
+        "protocolObjectTypesSupported",
+        "protocolServicesSupported",
+        "protocolVersion",
+        "segmentationSupported",
+        "systemStatus",
+        "vendorIdentifier",
+        "vendorName",
+        "protocolRevision",
+        "activeCovSubscriptions",
+        "backupFailureTimeout",
+        "configurationFiles",
+        "databaseRevision",
+        "lastRestoreTime",
+        "maxSegmentsAccepted",
+        "backupAndRestoreState",
+        "backupPreparationTime",
+        "restoreCompletionTime",
+        "restorePreparationTime",
+        "activeCovMultipleSubscriptions"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "file"
+      },
+      "properties": {
+        "archive": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "fileAccessMethod": {
+          "status": "ok",
+          "value": {
+            "name": "streamAccess",
+            "tag": "enumerated",
+            "value": 1
+          }
+        },
+        "fileSize": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "fileType": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "application/octet-stream"
+          }
+        },
+        "modificationDate": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "date",
+                "value": {
+                  "day": 22,
+                  "month": 10,
+                  "weekday": 4,
+                  "year": 2026
+                }
+              },
+              {
+                "tag": "time",
+                "value": {
+                  "hour": 1,
+                  "hundredths": 0,
+                  "minute": 0,
+                  "second": 4
+                }
+              }
+            ]
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "file"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Ivory"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "file",
+            "tag": "enumerated",
+            "value": 10
+          }
+        },
+        "readOnly": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        }
+      },
+      "propertyList": [
+        "archive",
+        "fileAccessMethod",
+        "fileSize",
+        "fileType",
+        "modificationDate",
+        "readOnly"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "multiStateInput"
+      },
+      "properties": {
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "numberOfStates": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 3
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "multiStateInput"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Hot Pink"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "multiStateInput",
+            "tag": "enumerated",
+            "value": 13
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "stateText": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "characterString",
+                "value": "On"
+              },
+              {
+                "tag": "characterString",
+                "value": "Off"
+              },
+              {
+                "tag": "characterString",
+                "value": "Auto"
+              }
+            ]
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "numberOfStates",
+        "outOfService",
+        "presentValue",
+        "stateText",
+        "statusFlags"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "multiStateOutput"
+      },
+      "properties": {
+        "currentCommandPriority": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for multiStateOutput:1 currentCommandPriority has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"OptionalUnsigned\":{\"NULL\":{\"_datatype\":\"0\",\"_datatypeLabel\":\"Null\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for multiStateOutput:1 currentCommandPriority has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"OptionalUnsigned\":{\"NULL\":{\"_datatype\":\"0\",\"_datatypeLabel\":\"Null\"}}}",
+          "status": "error"
+        },
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "numberOfStates": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 3
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "multiStateOutput"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Indigo"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "multiStateOutput",
+            "tag": "enumerated",
+            "value": 14
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "priorityArray": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              },
+              {
+                "tag": "null"
+              }
+            ]
+          }
+        },
+        "relinquishDefault": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "numberOfStates",
+        "outOfService",
+        "presentValue",
+        "priorityArray",
+        "relinquishDefault",
+        "statusFlags",
+        "currentCommandPriority"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "notificationClass"
+      },
+      "properties": {
+        "ackRequired": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              true,
+              false,
+              true
+            ]
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "notificationClass"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Crimson"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "notificationClass",
+            "tag": "enumerated",
+            "value": 15
+          }
+        },
+        "priority": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "unsignedInt",
+                "value": 100
+              },
+              {
+                "tag": "unsignedInt",
+                "value": 50
+              },
+              {
+                "tag": "unsignedInt",
+                "value": 200
+              }
+            ]
+          }
+        },
+        "recipientList": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "fromTime": {
+                  "tag": "time",
+                  "value": {
+                    "hour": 0,
+                    "hundredths": 0,
+                    "minute": 0,
+                    "second": 0
+                  }
+                },
+                "issueConfirmedNotifications": {
+                  "tag": "boolean",
+                  "value": false
+                },
+                "processIdentifier": {
+                  "tag": "unsignedInt",
+                  "value": 1
+                },
+                "recipient": {
+                  "tag": "address",
+                  "value": {
+                    "macAddress": [],
+                    "networkNumber": 0
+                  }
+                },
+                "toTime": {
+                  "tag": "time",
+                  "value": {
+                    "hour": 23,
+                    "hundredths": 99,
+                    "minute": 59,
+                    "second": 59
+                  }
+                },
+                "transitions": {
+                  "tag": "bitString",
+                  "value": [
+                    true,
+                    true,
+                    true
+                  ]
+                },
+                "validDays": {
+                  "tag": "bitString",
+                  "value": [
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "ackRequired",
+        "priority",
+        "recipientList"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "schedule"
+      },
+      "properties": {
+        "effectivePeriod": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for schedule:1 effectivePeriod has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"DateRange\":{\"StartDate\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"EndDate\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for schedule:1 effectivePeriod has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"DateRange\":{\"StartDate\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"EndDate\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"}}}",
+          "status": "error"
+        },
+        "exceptionSchedule": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "eventPriority": {
+                  "tag": "unsignedInt",
+                  "value": 1
+                },
+                "period": {
+                  "calendarEntry": {
+                    "value": {
+                      "day": 25,
+                      "kind": "date",
+                      "month": 12,
+                      "weekday": 255,
+                      "year": 2026
+                    }
+                  }
+                },
+                "timeValues": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              }
+            ]
+          }
+        },
+        "listOfObjectPropertyReferences": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 1,
+                  "type": "analogOutput"
+                }
+              },
+              {
+                "tag": "unsignedInt",
+                "value": 85
+              },
+              {
+                "tag": "objectIdentifier",
+                "value": {
+                  "instance": 389014,
+                  "type": "device"
+                }
+              }
+            ]
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "schedule"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Saffron"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "schedule",
+            "tag": "enumerated",
+            "value": 17
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "real",
+            "value": 20
+          }
+        },
+        "priorityForWriting": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 8
+          }
+        },
+        "reliability": {
+          "status": "ok",
+          "value": {
+            "name": "noFaultDetected",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "scheduleDefault": {
+          "status": "ok",
+          "value": {
+            "tag": "real",
+            "value": 20
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "weeklySchedule": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": [
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": [
+                    {
+                      "time": {
+                        "tag": "time",
+                        "value": {
+                          "hour": 8,
+                          "hundredths": 0,
+                          "minute": 0,
+                          "second": 0
+                        }
+                      },
+                      "value": {
+                        "tag": "real",
+                        "value": 75
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              },
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              },
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              },
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              },
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              },
+              {
+                "daySchedule": {
+                  "tag": "constructed",
+                  "value": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "effectivePeriod",
+        "exceptionSchedule",
+        "listOfObjectPropertyReferences",
+        "outOfService",
+        "presentValue",
+        "priorityForWriting",
+        "reliability",
+        "statusFlags",
+        "weeklySchedule",
+        "scheduleDefault"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "eventLog"
+      },
+      "properties": {
+        "bufferSize": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 100
+          }
+        },
+        "enable": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "lastNotifyRecord": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "logBuffer": {
+          "detail": {
+            "errorClass": "property",
+            "errorCode": "code(27)",
+            "kind": "error",
+            "path": "rpm"
+          },
+          "reason": "property/code(27)",
+          "status": "error"
+        },
+        "notificationThreshold": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "eventLog"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Beige"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "eventLog",
+            "tag": "enumerated",
+            "value": 25
+          }
+        },
+        "recordCount": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "recordsSinceNotification": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "stopWhenFull": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "totalRecordCount": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        }
+      },
+      "propertyList": [
+        "eventState",
+        "statusFlags",
+        "bufferSize",
+        "logBuffer",
+        "enable",
+        "notificationThreshold",
+        "recordsSinceNotification",
+        "recordCount",
+        "stopWhenFull",
+        "totalRecordCount",
+        "lastNotifyRecord"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "positiveIntegerValue"
+      },
+      "properties": {
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "positiveIntegerValue"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Turquoise"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "positiveIntegerValue",
+            "tag": "enumerated",
+            "value": 48
+          }
+        },
+        "presentValue": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 100
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "units": {
+          "status": "ok",
+          "value": {
+            "name": "noUnits",
+            "tag": "enumerated",
+            "value": 95
+          }
+        }
+      },
+      "propertyList": [
+        "presentValue",
+        "statusFlags",
+        "units"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "networkPort"
+      },
+      "properties": {
+        "apduLength": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1476
+          }
+        },
+        "bacnetIpMode": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "bacnetIpUdpPort": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 47834
+          }
+        },
+        "changesPending": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "command": {
+          "status": "ok",
+          "value": {
+            "name": "idle",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "commandValidationResult": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for networkPort:1 commandValidationResult has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"Health\":{\"Timestamp\":{\"_context\":\"0\",\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"Time\":{\"_text\":\"255:255:255.255\",\"_datatype\":\"11\",\"_datatypeLabel\":\"Time\",\"_hour\":\"255\",\"_hundredthSeconds\":\"255\",\"_minute\":\"255\",\"_second\":\"255\"}},\"Result\":{\"_context\":\"1\",\"ErrorClass\":{\"_text\":\"security\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_value\":\"4\"},\"ErrorCode\":{\"_text\":\"success\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_val…",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for networkPort:1 commandValidationResult has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"Health\":{\"Timestamp\":{\"_context\":\"0\",\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"Time\":{\"_text\":\"255:255:255.255\",\"_datatype\":\"11\",\"_datatypeLabel\":\"Time\",\"_hour\":\"255\",\"_hundredthSeconds\":\"255\",\"_minute\":\"255\",\"_second\":\"255\"}},\"Result\":{\"_context\":\"1\",\"ErrorClass\":{\"_text\":\"security\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_value\":\"4\"},\"ErrorCode\":{\"_text\":\"success\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_val…",
+          "status": "error"
+        },
+        "fdBbmdAddress": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "host-specific (not recorded)"
+          }
+        },
+        "fdSubscriptionLifetime": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "ipAddress": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "host-specific (not recorded)"
+          }
+        },
+        "ipDefaultGateway": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "host-specific (not recorded)"
+          }
+        },
+        "ipDnsServer": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "host-specific (not recorded)"
+          }
+        },
+        "ipSubnetMask": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "host-specific (not recorded)"
+          }
+        },
+        "linkSpeed": {
+          "status": "ok",
+          "value": {
+            "tag": "real",
+            "value": 0
+          }
+        },
+        "macAddress": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "host-specific (not recorded)"
+          }
+        },
+        "networkNumber": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "networkNumberQuality": {
+          "status": "ok",
+          "value": {
+            "name": "unknown",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "networkType": {
+          "status": "ok",
+          "value": {
+            "name": "ipv4",
+            "tag": "enumerated",
+            "value": 5
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "networkPort"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Vermilion"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "networkPort",
+            "tag": "enumerated",
+            "value": 56
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "protocolLevel": {
+          "status": "ok",
+          "value": {
+            "name": "bacnetApplication",
+            "tag": "enumerated",
+            "value": 2
+          }
+        },
+        "referencePort": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 4194303
+          }
+        },
+        "reliability": {
+          "status": "ok",
+          "value": {
+            "name": "noFaultDetected",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "outOfService",
+        "reliability",
+        "statusFlags",
+        "apduLength",
+        "ipAddress",
+        "ipDefaultGateway",
+        "ipDnsServer",
+        "bacnetIpMode",
+        "ipSubnetMask",
+        "bacnetIpUdpPort",
+        "changesPending",
+        "command",
+        "fdBbmdAddress",
+        "fdSubscriptionLifetime",
+        "linkSpeed",
+        "macAddress",
+        "networkNumber",
+        "networkNumberQuality",
+        "networkType",
+        "protocolLevel",
+        "referencePort",
+        "commandValidationResult"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "elevatorGroup"
+      },
+      "properties": {
+        "groupId": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "groupMembers": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "lift"
+            }
+          }
+        },
+        "groupMode": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 1
+          }
+        },
+        "landingCallControl": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for elevatorGroup:1 landingCallControl has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"LandingCallStatus\":{\"FloorNumber\":{\"_text\":\"0\",\"_context\":\"0\",\"_datatype\":\"2\",\"_datatypeLabel\":\"UnsignedInteger\",\"_value\":\"0\"},\"Direction\":{\"_text\":\"Unknown Enumeration Value (1)\",\"_context\":\"1\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_value\":\"1\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for elevatorGroup:1 landingCallControl has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"LandingCallStatus\":{\"FloorNumber\":{\"_text\":\"0\",\"_context\":\"0\",\"_datatype\":\"2\",\"_datatypeLabel\":\"UnsignedInteger\",\"_value\":\"0\"},\"Direction\":{\"_text\":\"Unknown Enumeration Value (1)\",\"_context\":\"1\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_value\":\"1\"}}}",
+          "status": "error"
+        },
+        "landingCalls": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": []
+          }
+        },
+        "machineRoomId": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "positiveIntegerValue"
+            }
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "elevatorGroup"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Maroon"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "elevatorGroup",
+            "tag": "enumerated",
+            "value": 57
+          }
+        }
+      },
+      "propertyList": [
+        "groupMembers",
+        "groupId",
+        "groupMode",
+        "landingCalls",
+        "landingCallControl",
+        "machineRoomId"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "escalator"
+      },
+      "properties": {
+        "elevatorGroup": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 4194303,
+              "type": "elevatorGroup"
+            }
+          }
+        },
+        "escalatorMode": {
+          "status": "ok",
+          "value": {
+            "name": "up",
+            "tag": "enumerated",
+            "value": 2
+          }
+        },
+        "groupId": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "installationId": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "escalator"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Mint"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "escalator",
+            "tag": "enumerated",
+            "value": 58
+          }
+        },
+        "operationDirection": {
+          "status": "ok",
+          "value": {
+            "name": "upRatedSpeed",
+            "tag": "enumerated",
+            "value": 2
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "passengerAlarm": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "powerMode": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": true
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      },
+      "propertyList": [
+        "outOfService",
+        "statusFlags",
+        "elevatorGroup",
+        "escalatorMode",
+        "groupId",
+        "installationId",
+        "operationDirection",
+        "passengerAlarm",
+        "powerMode"
+      ]
+    },
+    {
+      "objectIdentifier": {
+        "instance": 1,
+        "type": "lift"
+      },
+      "properties": {
+        "ackedTransitions": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              true,
+              true,
+              true
+            ]
+          }
+        },
+        "assignedLandingCalls": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for lift:1 assignedLandingCalls has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"AssignedLandingCalls\":{\"LandingCalls\":{\"_context\":\"0\",\"_count\":\"0\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for lift:1 assignedLandingCalls has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"AssignedLandingCalls\":{\"LandingCalls\":{\"_context\":\"0\",\"_count\":\"0\"}}}",
+          "status": "error"
+        },
+        "carDoorStatus": {
+          "status": "ok",
+          "value": {
+            "name": "closed",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "carMovingDirection": {
+          "status": "ok",
+          "value": {
+            "name": "stopped",
+            "tag": "enumerated",
+            "value": 2
+          }
+        },
+        "carPosition": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 3
+          }
+        },
+        "elevatorGroup": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "elevatorGroup"
+            }
+          }
+        },
+        "eventAlgorithmInhibit": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "eventDetectionEnable": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": true
+          }
+        },
+        "eventEnable": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              true,
+              false,
+              true
+            ]
+          }
+        },
+        "eventState": {
+          "status": "ok",
+          "value": {
+            "name": "normal",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "eventTimeStamps": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for lift:1 eventTimeStamps has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"TimeStamp\":[{\"Datetime\":{\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"Time\":{\"_text\":\"255:255:255.255\",\"_datatype\":\"11\",\"_datatypeLabel\":\"Time\",\"_hour\":\"255\",\"_hundredthSeconds\":\"255\",\"_minute\":\"255\",\"_second\":\"255\"}}},{\"Datetime\":{\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"…",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for lift:1 eventTimeStamps has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"TimeStamp\":[{\"Datetime\":{\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"Time\":{\"_text\":\"255:255:255.255\",\"_datatype\":\"11\",\"_datatypeLabel\":\"Time\",\"_hour\":\"255\",\"_hundredthSeconds\":\"255\",\"_minute\":\"255\",\"_second\":\"255\"}}},{\"Datetime\":{\"Date\":{\"_text\":\"Unspecified Month, Unspecified Day, Unspecified Year, Unspecified Day of Week\",\"_datatype\":\"10\",\"_datatypeLabel\":\"Date\",\"_day\":\"255\",\"_month\":\"255\",\"_weekday\":\"255\",\"_year\":\"255\"},\"…",
+          "status": "error"
+        },
+        "faultSignals": {
+          "status": "ok",
+          "value": {
+            "tag": "constructed",
+            "value": []
+          }
+        },
+        "groupId": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "installationId": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "landingDoorStatus": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for lift:1 landingDoorStatus has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"LandingDoorStatus\":{\"LandingDoors\":{\"_context\":\"0\",\"_count\":\"1\",\"LandingDoor\":{\"FloorNumber\":{\"_text\":\"3\",\"_context\":\"0\",\"_datatype\":\"2\",\"_datatypeLabel\":\"UnsignedInteger\",\"_value\":\"3\"},\"DoorStatus\":{\"_text\":\"Unknown Enumeration Value (0)\",\"_context\":\"1\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_value\":\"0\"}}}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for lift:1 landingDoorStatus has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"LandingDoorStatus\":{\"LandingDoors\":{\"_context\":\"0\",\"_count\":\"1\",\"LandingDoor\":{\"FloorNumber\":{\"_text\":\"3\",\"_context\":\"0\",\"_datatype\":\"2\",\"_datatypeLabel\":\"UnsignedInteger\",\"_value\":\"3\"},\"DoorStatus\":{\"_text\":\"Unknown Enumeration Value (0)\",\"_context\":\"1\",\"_datatype\":\"9\",\"_datatypeLabel\":\"Enumerated\",\"_value\":\"0\"}}}}}",
+          "status": "error"
+        },
+        "notificationClass": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 1
+          }
+        },
+        "notifyType": {
+          "status": "ok",
+          "value": {
+            "name": "alarm",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "objectIdentifier": {
+          "status": "ok",
+          "value": {
+            "tag": "objectIdentifier",
+            "value": {
+              "instance": 1,
+              "type": "lift"
+            }
+          }
+        },
+        "objectName": {
+          "status": "ok",
+          "value": {
+            "tag": "characterString",
+            "value": "Mauve"
+          }
+        },
+        "objectType": {
+          "status": "ok",
+          "value": {
+            "name": "lift",
+            "tag": "enumerated",
+            "value": 59
+          }
+        },
+        "outOfService": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "passengerAlarm": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "registeredCarCall": {
+          "detail": {
+            "kind": "decode",
+            "message": "ReadPropertyMultiple-ACK for lift:1 registeredCarCall has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"LiftCarCallList\":{\"FloorNumbers\":{\"_context\":\"0\",\"_count\":\"0\"}}}",
+            "path": "rpm"
+          },
+          "reason": "decode failed: ReadPropertyMultiple-ACK for lift:1 registeredCarCall has a PropertyValue shape the decoder does not handle: {\"_context\":\"4\",\"LiftCarCallList\":{\"FloorNumbers\":{\"_context\":\"0\",\"_count\":\"0\"}}}",
+          "status": "error"
+        },
+        "reliability": {
+          "status": "ok",
+          "value": {
+            "name": "noFaultDetected",
+            "tag": "enumerated",
+            "value": 0
+          }
+        },
+        "reliabilityEvaluationInhibit": {
+          "status": "ok",
+          "value": {
+            "tag": "boolean",
+            "value": false
+          }
+        },
+        "statusFlags": {
+          "status": "ok",
+          "value": {
+            "tag": "bitString",
+            "value": [
+              false,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        "timeDelay": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        },
+        "timeDelayNormal": {
+          "status": "ok",
+          "value": {
+            "tag": "unsignedInt",
+            "value": 0
+          }
+        }
+      },
+      "propertyList": [
+        "ackedTransitions",
+        "notificationClass",
+        "eventEnable",
+        "eventState",
+        "notifyType",
+        "outOfService",
+        "reliability",
+        "statusFlags",
+        "timeDelay",
+        "eventTimeStamps",
+        "eventDetectionEnable",
+        "eventAlgorithmInhibit",
+        "timeDelayNormal",
+        "reliabilityEvaluationInhibit",
+        "assignedLandingCalls",
+        "carDoorStatus",
+        "carMovingDirection",
+        "carPosition",
+        "elevatorGroup",
+        "faultSignals",
+        "groupId",
+        "installationId",
+        "landingDoorStatus",
+        "passengerAlarm",
+        "registeredCarCall"
+      ]
+    }
+  ],
+  "pollPath": "rpm-all",
+  "pollWarnings": [],
+  "segmentationSupported": "segmentedBoth",
+  "servicesSupported": [
+    "acknowledgeAlarm",
+    "confirmedEventNotification",
+    "subscribeCOV",
+    "atomicReadFile",
+    "atomicWriteFile",
+    "createObject",
+    "deleteObject",
+    "readProperty",
+    "readPropertyMultiple",
+    "writeProperty",
+    "writePropertyMultiple",
+    "deviceCommunicationControl",
+    "reinitializeDevice",
+    "iAm",
+    "iHave",
+    "unconfirmedEventNotification",
+    "timeSynchronization",
+    "whoHas",
+    "whoIs",
+    "readRange",
+    "getEventInformation",
+    "subscribeCOVPropertyMultiple"
+  ],
+  "target": {
+    "address": "127.0.0.1",
+    "deviceInstance": 389014,
+    "port": 47834
+  }
+}

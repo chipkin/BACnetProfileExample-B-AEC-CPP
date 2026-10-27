@@ -85,6 +85,9 @@ DIRECTION_DOWN = 4
 DOOR_CLOSED = 0
 DOOR_OPENED = 1
 
+ERROR_CLASS_OBJECT = 1
+ERROR_CODE_UNKNOWN_OBJECT = 31
+
 
 def workstation():
     """The operator workstation: a wiretest.Workstation whose confirmed requests are sent again,
@@ -99,7 +102,7 @@ def parser(description):
     arguments = argparse.ArgumentParser(description=description, formatter_class=argparse.RawDescriptionHelpFormatter)
     arguments.add_argument("--exe", default=str(wiretest.default_exe(REPOSITORY, "BACnetExampleBAEC")),
                            help="path to BACnetExampleBAEC (default: build/BACnetExampleBAEC)")
-    arguments.add_argument("--port", type=int, default=48040, help="the controller's UDP port (default 48040)")
+    arguments.add_argument("--port", type=int, default=47834, help="the controller's UDP port (default 47834)")
     return arguments
 
 

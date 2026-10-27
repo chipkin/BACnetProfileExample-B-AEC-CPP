@@ -29,9 +29,9 @@ dynamic object creation copies this pattern.
 - **[docs/PICS.md](docs/PICS.md)** - the Protocol Implementation Conformance
   Statement: every object, every property, and who answers it.
 
-> **Versions:** this document describes **example v1.2.0**, built and verified
-> against **CAS BACnet Stack 6.0.23** (`6.x` @ `64b2cfac5`), at
-> **Protocol_Revision 30**, with the vendored `common/` helper at **v3.4.0**.
+> **Versions:** this document describes **example v1.3.0**, built and verified
+> against **CAS BACnet Stack 6.0.23** (`6.x` @ `69b6249f`), at
+> **Protocol_Revision 30**, with the vendored `common/` helper at **v3.5.0**.
 > Running the example prints all three - if what it prints disagrees with this
 > line, trust the program and check `CHANGELOG.md`.
 
@@ -75,11 +75,11 @@ operator workstation, or the Python client in [`tests/`](tests/README.md):
    (PASSWORD_FAILURE) and starts nothing; a restored file that is not a
    configuration image changes nothing.
 
-Every one of these is a [Wire Test](#wire-tests). Two stack limits at this pin
-show as `[KNOWN GAP]` lines and are in [TODO.md](TODO.md): the Event Log **starts
+Every one of these is a [Wire Test](#wire-tests). One stack limit at this pin
+shows as a `[KNOWN GAP]` line and is in [TODO.md](TODO.md): the Event Log **starts
 disabled** (a client must write `Enable` TRUE - the customer API has no call to
-start it enabled, stack #3301), and it logs this device's own broadcast
-notification **twice** (stack #3957). A third: the landing-call callback has no
+start it enabled, stack #3301). (Stack #3957, the device's own broadcast
+notification logged twice, is fixed at this pin.) A second: the landing-call callback has no
 error-code out-parameter, so the refusal in step 2 answers WRITE_ACCESS_DENIED,
 not VALUE_OUT_OF_RANGE.
 
@@ -141,7 +141,7 @@ elevator object family inherited from B-EM/B-EC.
 |---------|-------|
 | ReadProperty, ReadPropertyMultiple | Responds to property reads (DS-RP-B, DS-RPM-B). |
 | WriteProperty, WritePropertyMultiple | Commands the three outputs and the Elevator Group's landing call (DS-WP-B, DS-WPM-B). |
-| SubscribeCOV, SubscribeCOVPropertyMultiple | Analog Input 1 is subscribable on two properties. |
+| SubscribeCOV, SubscribeCOVPropertyMultiple | Analog Input 1 is subscribable on two properties; its `COV_Increment` is 1.0. |
 | ConfirmedEventNotification / UnconfirmedEventNotification | Sent to Notification Class 1's recipients when the Lift's `Passenger_Alarm` transitions. |
 | AcknowledgeAlarm, GetEventInformation | Accepts alarm acknowledgement, answers event-information queries. |
 | CreateObject, DeleteObject | Creates/deletes an Analog Value at runtime (DM-OCD-B). |
@@ -286,9 +286,9 @@ CMake at it: `cmake -B build -S . -D CAS_STACK_DIR=/path/to/cas-bacnet-stack`.
 Expected output:
 
 ```
-BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.2.0
+BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.3.0
 CAS BACnet Stack version: 6.0.23.0
-Common helper (common/) version: 3.4.0
+Common helper (common/) version: 3.5.0
 FYI: Listening for BACnet/IP on UDP port 47808 (Network Port 1).
 TX 21 bytes to 192.168.3.255:47808 (broadcast) (Network Port 1)
 FYI: Device 389014 ("Chipkin Example B-AEC") ready. Vendor ID 389. Accepts WriteProperty to Chartreuse/Fuchsia/Indigo and Landing_Call_Control on Maroon. Press 'd' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.
@@ -315,7 +315,9 @@ firewall. To use a different port, pass `--port` (see below).
 |--------|---------|---------|
 | `--port <n>` | `47808` | UDP port to listen on (BACnet/IP). |
 | `--deviceID <n>` | `389014` | The device's BACnet instance number (BACnet requires this to be configurable). |
+| `--deviceName <text>` | `Chipkin Example B-AEC` | The Device object's `Object_Name`, 1..255 bytes, no control characters. It must be unique across the BACnet internetwork, so give every unit its own (BACnet requires it to be configurable, like the instance). An invalid value prints a warning and keeps the default. |
 | `--dcc-password <string>` | none | The password DeviceCommunicationControl and ReinitializeDevice (including backup and restore) must carry. Without it any request is accepted. |
+| `--xml` | off | Print every received and sent BACnet message as an indented XML block instead of a one-line summary (very verbose; for protocol debugging). |
 | `--help`, `-h` | - | Show usage and exit. |
 | `--version` | - | Print the example, stack, and `common/` helper versions, then exit. |
 
@@ -346,11 +348,13 @@ python3 tests/run_wire_tests.py --exe build/BACnetExampleBAEC              # Lin
 python tests\run_wire_tests.py --exe build\Release\BACnetExampleBAEC.exe   # Windows
 ```
 
-It ends with `ALL WIRE TESTS PASSED` (exit 0). Six scripts, one per part of the
+It ends with `ALL WIRE TESTS PASSED` (exit 0). Eight scripts, one per part of the
 scenario above: discovery (every property every object lists reads as a value;
-the Event Log's `Log_Buffer` is refused, as ReadRange only), the elevator,
+the Event Log's `Log_Buffer` is refused, as ReadRange only), the command line
+(`--deviceID`, `--deviceName`, `--help`, `--xml`), the elevator,
 CreateObject/DeleteObject, the Schedule over TimeSynchronization, the Event Log
-over ReadRange, and backup/restore - with their Failure Modes. Each check has
+over ReadRange, backup/restore, and the writable Notification Class
+Recipient_List - with their Failure Modes. Each check has
 been shown to fail with its feature removed (the table at the end of
 [tests/README.md](tests/README.md)). A `[KNOWN GAP]` line is a stack defect,
 listed in [TODO.md](TODO.md). CI runs them on Linux after the smoke test.

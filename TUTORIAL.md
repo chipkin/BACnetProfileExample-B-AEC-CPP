@@ -42,10 +42,10 @@ name are all in the `CHANGE ALL OF THIS BEFORE YOU SHIP` block at the top of
 block is the authoritative checklist; it is in the source rather than here so
 it cannot be skipped by someone who only reads the code. `DEVICE_NAME` carries
 its own warning: `Object_Name` **must be unique across the BACnet
-internetwork**. It is a compile-time constant in this tutorial, which is fine
-for one instance - a real product must make it per-unit configurable (a serial
-number, DIP switches, a config file, or a `--deviceName` argument), not
-hard-coded.
+internetwork**. The name there is only the default: each unit takes its own
+with `--deviceName` at start-up, as it takes its instance with `--deviceID`. A
+real product configures it per unit (a serial number, DIP switches, a config
+file, or this argument).
 
 ### Add or extend an object
 
@@ -115,7 +115,7 @@ infer it:
 | Lift | `Object_Name`, `Car_Position`, `Car_Moving_Direction`, `Car_Door_Status`, `Passenger_Alarm`, `Out_Of_Service`, `Fault_Signals` | optional list/sequence properties |
 | Escalator | `Object_Name`, `Operation_Direction`, `Passenger_Alarm`, `Out_Of_Service` | optional `Power_Mode`, `Escalator_Mode` |
 | Positive Integer Value | `Present_Value`, `Object_Name` | — |
-| Notification Class | `Object_Name` | Priority/Ack_Required/Recipient_List are stack-held |
+| Notification Class | `Object_Name` | Priority/Ack_Required/Recipient_List are stack-held; Recipient_List is writable (the stack stores a written list) |
 | Event Log | `Object_Name` | everything else is stack-held by the Event Log engine |
 | Schedule | `Object_Name`, `Reliability`, `Out_Of_Service` | everything else is stack-held by the Schedule engine |
 | Calendar | `Object_Name`, `Present_Value` | this example's `AddObject` Calendar has an empty `Date_List`; `BACnetStack_AddCalendarObject` (stack-held) is the better choice now - see `TODO.md` |
@@ -170,8 +170,8 @@ rather than against "it looked fine in the explorer":
 
 `docs/PICS.md` is partly generated. `docs/objects.json` describes each object and
 who serves which property; `tools/gen-objects-properties.py` regenerates the
-object tables from it plus the stack's own `docs/property-profile-reference.md`
-at the pinned commit:
+object tables from it plus the CAS BACnet Stack's property profiles (a
+reference the series tool vendors):
 
 ```bash
 python tools/gen-objects-properties.py BACnetProfileExample-B-AEC-CPP            # rewrite
