@@ -148,8 +148,8 @@ object-name: "Chartreuse"
 object-type: ANALOG_OUTPUT
 event-state: NORMAL
 out-of-service: FALSE
-present-value: 20 W
-priority-array: {?, ?, ?, ?, ?, ?, ?, 20, ?, ?, ?, ?, ?, ?, ?, ?} R
+present-value: ? W
+priority-array: {?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?} R
 relinquish-default: 20
 status-flags: (F,F,F,F)
 units: DEGREES-CELSIUS
@@ -191,7 +191,7 @@ object-name: "Chipkin Example B-AEC"
 object-type: DEVICE
 apdu-segment-timeout: 5000
 apdu-timeout: 10000
-application-software-version: "1.2.0"
+application-software-version: "1.4.0"
 description: "Chipkin CAS BACnet Stack example - B-AEC (Advanced Elevator Controller) profile. Commands three outputs and the landing calls, creates and deletes Analog Values, keeps an Event Log, runs a Schedule, and backs up and restores its configuration."
 device-address-binding: ?
 firmware-revision: "6.0.23.0"

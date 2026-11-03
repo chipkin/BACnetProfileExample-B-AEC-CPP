@@ -18,7 +18,7 @@ see [README.md](../README.md).
 | **Vendor Identifier** | 389 |
 | **Product Name** | CAS BACnet Stack Example - B-AEC |
 | **Product Model Number** | CAS BACnet Stack Example - B-AEC |
-| **Application Software Version** | 1.3.0 |
+| **Application Software Version** | 1.4.0 |
 | **Firmware Revision** | 6.0.23.0 (the CAS BACnet Stack version) |
 | **BACnet Protocol Version** | 1 |
 | **BACnet Protocol Revision** | 30 |
@@ -119,7 +119,7 @@ DS-COVM-B: a SubscribeCOVPropertyMultiple subscriber gets the -Multiple form).
 
 Segmentation is **supported in both directions**
 (`Segmentation_Supported` = `segmented-both`), by the stack: at `6.x` @
-`69b6249f` the customer build compiles `STACK_OPTION_SEGMENTATION` in (stack
+`1e7dffe2b` the customer build compiles `STACK_OPTION_SEGMENTATION` in (stack
 #2992), and this example keeps the stack's defaults - `Max_Segments_Accepted`
 16 and `APDU_Segment_Timeout` 5000 ms. Table 12-13 footnote 1: "These
 properties are required if, and shall be present only if, segmentation of any
@@ -350,7 +350,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Landing_Call_Control *(optional, enabled)* | BACnetLandingCallStatus | app | yes |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### Lift 1 "Mauve" - F-ELEVATOR (canonical). The stack's Lift property profile lists Car_Position, Car_Moving_Direction, Car_Door_Status, Passenger_Alarm, Out_Of_Service and Fault_Signals as required with no default (the application must serve them), as CASBACnetStackDLL.h's own comment above BACnetStack_AddLiftOrEscalatorObject does. This example serves every one of them, as clause 12.59 requires - Car_Position and Car_Moving_Direction via GetPropertyUnsignedInteger/GetPropertyEnumerated, Car_Door_Status (one door, index 1) via GetPropertyEnumerated with useArrayIndex, Passenger_Alarm and Out_Of_Service via GetPropertyBool, Fault_Signals (empty - no active faults) via the GetListOfEnumerations callback. Status_Flags, Elevator_Group, Group_ID and Installation_ID ARE in the generic profile (stack-computed/stack-stored) and are accepted for the same reason as Maroon's. Passenger_Alarm is the AE-N-I-B alarm source: an intrinsic ChangeOfState(bool) algorithm routed to Notification Class 1 (Crimson); it is not writable through any API in this stack (a real installation drives it from hardware), so this example simulates it on a 30-second timer rather than a key or a write - see the file header comment in main.cpp. Optional properties Assigned_Landing_Calls, Registered_Car_Call and Landing_Door_Status are enabled and each exercises one of the four F-ELEVATOR list/sequence callbacks with one demonstration entry
+### Lift 1 "Mauve" - F-ELEVATOR (canonical). The stack's Lift property profile lists Car_Position, Car_Moving_Direction, Car_Door_Status, Passenger_Alarm, Out_Of_Service and Fault_Signals as required with no default (the application must serve them), as CASBACnetStackDLL.h's own comment above BACnetStack_AddLiftOrEscalatorObject does. This example serves every one of them, as clause 12.59 requires - Car_Position and Car_Moving_Direction via GetPropertyUnsignedInteger/GetPropertyEnumerated, Car_Door_Status (one door, index 1) via GetPropertyEnumerated with useArrayIndex, Passenger_Alarm and Out_Of_Service via GetPropertyBool, Fault_Signals (empty - no active faults) via the GetListOfEnumerations callback. Status_Flags, Elevator_Group, Group_ID and Installation_ID ARE in the generic profile (stack-computed/stack-stored) and are accepted for the same reason as Maroon's. Passenger_Alarm is the AE-N-I-B alarm source: an intrinsic ChangeOfState(bool) algorithm routed to Notification Class 1 (Crimson); it is not writable through any API in this stack (a real installation drives it from hardware), so this example simulates it on a 30-second timer rather than a key or a write - see the file header comment in main.cpp. `--no-simulated-alarms` turns the timer off (the alarm then stays cleared and the device has no active event). Optional properties Assigned_Landing_Calls, Registered_Car_Call and Landing_Door_Status are enabled and each exercises one of the four F-ELEVATOR list/sequence callbacks with one demonstration entry
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|
@@ -411,7 +411,7 @@ Every object this example creates, and every REQUIRED property of each (per ANSI
 | Recipient_List | BACnetLIST of BACnetDestination | stack default, accepted (None known - a read fails with `unknown-property` or an empt) | yes |
 | Property_List | BACnetARRAY[N] of BACnetPropertyIdentifier | stack | no |
 
-### Event Log 1 "Beige" - AE-EL-I-B (F-EVENTLOG, NEW vs B-EC; this series' canonical pattern is B-ALSC-CPP). Enable/Buffer_Size/Record_Count/Total_Record_Count/Stop_When_Full/Log_Buffer/Status_Flags/Object_Identifier/Object_Type/Property_List are held and served by the stack's own Event Log engine (BACnetStack_AddEventLogObject), answered from stack storage before this file's Get*/Set* callbacks are consulted; marked accepted only because the stack's generic property profile does not know about this engine (Stop_When_Full reads FALSE: the buffer wraps). Enable starts FALSE and no customer call sets it: a client must write it TRUE before anything is logged. Log_Buffer is read with ReadRange (enabled; a ReadProperty of it is refused, cl. 12.27.13). At 29b83de6 this device's own broadcast notification was logged twice (stack #3957, TODO.md item 3); fixed at 69b6249f, one record per transition. (Total_Record_Count is present and reads; TODO.md item 1 is withdrawn.) Checked by hand 2026-10-15: with Enable TRUE a Passenger_Alarm transition is logged and ReadRange returns it
+### Event Log 1 "Beige" - AE-EL-I-B (F-EVENTLOG, NEW vs B-EC; this series' canonical pattern is B-ALSC-CPP). Enable/Buffer_Size/Record_Count/Total_Record_Count/Stop_When_Full/Log_Buffer/Status_Flags/Object_Identifier/Object_Type/Property_List are held and served by the stack's own Event Log engine (BACnetStack_AddEventLogObject), answered from stack storage before this file's Get*/Set* callbacks are consulted; marked accepted only because the stack's generic property profile does not know about this engine (Stop_When_Full reads FALSE: the buffer wraps). Enable starts FALSE and no customer call sets it: a client must write it TRUE before anything is logged. Log_Buffer is read with ReadRange (enabled; a ReadProperty of it is refused, cl. 12.27.13). At 29b83de6 this device's own broadcast notification was logged twice (stack #3957, TODO.md item 3); fixed at 1e7dffe2b, one record per transition. (Total_Record_Count is present and reads; TODO.md item 1 is withdrawn.) Checked by hand 2026-10-15: with Enable TRUE a Passenger_Alarm transition is logged and ReadRange returns it
 
 | Property | Datatype | Served by | Writable |
 |---|---|---|:---:|

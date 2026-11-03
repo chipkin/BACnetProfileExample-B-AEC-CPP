@@ -29,9 +29,9 @@ dynamic object creation copies this pattern.
 - **[docs/PICS.md](docs/PICS.md)** - the Protocol Implementation Conformance
   Statement: every object, every property, and who answers it.
 
-> **Versions:** this document describes **example v1.3.0**, built and verified
-> against **CAS BACnet Stack 6.0.23** (`6.x` @ `69b6249f`), at
-> **Protocol_Revision 30**, with the vendored `common/` helper at **v3.5.0**.
+> **Versions:** this document describes **example v1.4.0**, built and verified
+> against **CAS BACnet Stack 6.0.23** (`6.x` @ `1e7dffe2b`), at
+> **Protocol_Revision 30**, with the vendored `common/` helper at **v3.6.1**.
 > Running the example prints all three - if what it prints disagrees with this
 > line, trust the program and check `CHANGELOG.md`.
 
@@ -99,7 +99,8 @@ Non-BACnet scaffolding, outside the BACnet Surface, labelled `SIMULATION` in
 - **The Passenger_Alarm button** in the car, which flips every 30 s on a timer.
   The environment variable `BAEC_TEST_PASSENGER_ALARM_SECONDS=<n>` shortens
   that period for the Wire Tests; it is not a command-line option and changes
-  nothing a BACnet client can reach.
+  nothing a BACnet client can reach. The command-line option `--no-simulated-alarms`
+  turns the timer off altogether.
 - **The clock** is the host's clock plus the correction the last
   TimeSynchronization applied; a real device sets its RTC.
 
@@ -286,9 +287,9 @@ CMake at it: `cmake -B build -S . -D CAS_STACK_DIR=/path/to/cas-bacnet-stack`.
 Expected output:
 
 ```
-BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.3.0
+BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.4.0
 CAS BACnet Stack version: 6.0.23.0
-Common helper (common/) version: 3.5.0
+Common helper (common/) version: 3.6.1
 FYI: Listening for BACnet/IP on UDP port 47808 (Network Port 1).
 TX 21 bytes to 192.168.3.255:47808 (broadcast) (Network Port 1)
 FYI: Device 389014 ("Chipkin Example B-AEC") ready. Vendor ID 389. Accepts WriteProperty to Chartreuse/Fuchsia/Indigo and Landing_Call_Control on Maroon. Press 'd' to broadcast a demo Who-Is (DM-DDB-A), or 'h' for help.
@@ -317,6 +318,7 @@ firewall. To use a different port, pass `--port` (see below).
 | `--deviceID <n>` | `389014` | The device's BACnet instance number (BACnet requires this to be configurable). |
 | `--deviceName <text>` | `Chipkin Example B-AEC` | The Device object's `Object_Name`, 1..255 bytes, no control characters. It must be unique across the BACnet internetwork, so give every unit its own (BACnet requires it to be configurable, like the instance). An invalid value prints a warning and keeps the default. |
 | `--dcc-password <string>` | none | The password DeviceCommunicationControl and ReinitializeDevice (including backup and restore) must carry. Without it any request is accepted. |
+| `--no-simulated-alarms` | off | Turn the simulated Passenger_Alarm timer off. The alarm then stays cleared, so the device has no active event (for a test session that needs GetEventInformation to return an empty list, for example BTL 9.8.1). |
 | `--xml` | off | Print every received and sent BACnet message as an indented XML block instead of a one-line summary (very verbose; for protocol debugging). |
 | `--help`, `-h` | - | Show usage and exit. |
 | `--version` | - | Print the example, stack, and `common/` helper versions, then exit. |
@@ -414,7 +416,7 @@ There is one example repository per standardized device profile in ASHRAE 135-20
 
 | Profile | C++ | Node.js | C# | Rust | Python | Go |
 |---|---|---|---|---|---|---|
-| **B-LSC** Life Safety Controller | [B-LSC-CPP](https://github.com/chipkin/BACnetProfileExample-B-LSC-CPP) 🚧 | Ask | Ask | Ask | Ask | Ask |
+| **B-LSC** Life Safety Controller | [B-LSC-CPP](https://github.com/chipkin/BACnetProfileExample-B-LSC-CPP) | Ask | Ask | Ask | Ask | Ask |
 | **B-ALSC** Advanced Life Safety Controller | [B-ALSC-CPP](https://github.com/chipkin/BACnetProfileExample-B-ALSC-CPP) | Ask | Ask | Ask | Ask | Ask |
 
 ### Access control controllers (Annex L.6)
@@ -482,7 +484,7 @@ Client-side profiles.
 | **B-EWS** Elevator Workstation | planned | — | — | — | — | — |
 | **B-AEWS** Advanced Elevator Workstation | planned | — | — | — | — | — |
 
-🚧 = in progress. ⛔ = Blocked Example (blocked on the named stack gap). "Ask" = not yet built for that language; contact Chipkin if you need it. Profile definitions: ANSI/ASHRAE 135-2024 Annex L. BIBB definitions: Annex K. Get the stack: <https://store.chipkin.com/services/stacks/bacnet-stack>.
+⛔ = Blocked Example (blocked on the named stack gap). "Ask" = not yet built for that language; contact Chipkin if you need it. Profile definitions: ANSI/ASHRAE 135-2024 Annex L. BIBB definitions: Annex K. Get the stack: <https://store.chipkin.com/services/stacks/bacnet-stack>.
 <!-- PROFILE-TABLE:END -->
 
 ## References

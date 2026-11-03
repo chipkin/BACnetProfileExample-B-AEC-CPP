@@ -34,8 +34,12 @@ identity string), change these files to match, the same way you would update
    this repository:
 
    ```
-   build\Release\BACnetExampleBAEC.exe --port 47834 --deviceID 389014
+   build\Release\BACnetExampleBAEC.exe --port 47834 --deviceID 389014 --dcc-password Chipkin-DCC-42 --no-simulated-alarms
    ```
+
+   The project gives VeriBACnet the same (test) password, so start the example
+   with it; `--no-simulated-alarms` keeps the simulated passenger alarm from
+   firing during the run, which the event tests (9.8.1, 7.3.1.11.1) need.
 
    Wait until it prints `FYI: Device 389014 ("Chipkin Example B-AEC") ready.`
    Use port 47834, not the standard 47808, so the test does not collide with

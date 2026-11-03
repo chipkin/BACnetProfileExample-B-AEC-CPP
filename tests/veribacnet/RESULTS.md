@@ -7,14 +7,14 @@ addresses.
 
 | | |
 |---|---|
-| Date | 2026-10-27 |
-| Example | BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.2.0 (`common/` 3.5.0), CAS BACnet Stack `6.x` @ `69b6249f` |
+| Date | 2026-10-30 |
+| Example | BACnet B-AEC (Advanced Elevator Controller) Example - C++ v1.3.0 (`common/` 3.5.0), CAS BACnet Stack `6.x` @ `69b6249f` |
 | Profile | B-AEC (BACnet Advanced Elevator Controller) |
 | Transport | BACnet/IP, UDP port 47834 |
 | VeriBACnet | 0.20.0 (its test device uses CAS BACnet Stack 6.0.23.0) |
 | Password | The example was started with a DeviceCommunicationControl / ReinitializeDevice password (`--dcc-password`, a test value), and the project gives VeriBACnet the same password |
 | Test plan | 284 BTL tests (ANSI/ASHRAE 135.1-2023) selected for the B-AEC profile and the options this device claims |
-| Result | **123 PASS · 2 FAIL · 0 ERROR · 159 SKIP** |
+| Result | **125 PASS · 2 FAIL · 0 ERROR · 157 SKIP** |
 
 **Judged BTL-clean on BACnet/IP, with a star**: no failure or error is the
 example's own fault, every other failure is tracked, and every skipped test has
@@ -22,12 +22,13 @@ a stated reason. The star means some of the functions the example exists for
 were not measured by VeriBACnet in this run (below). See "What BTL-clean means"
 in [README.md](README.md). This is not BTL certification.
 
-**Measured coverage:** 125 of the 284 selected tests ran (123 passed, 2
-failed). Of the 159 skipped, 82 wait on a test-tool or test-script fix
-(tracked), 44 need an operator, 31 do not apply to this device, and 2 wait on
-this example (its simulated alarm cannot be switched off, and a written
-Notification Class recipient list lasts only until the example restarts, so
-the test that restarts the device with a written list was not set up). The 31
+**Measured coverage:** 127 of the 284 selected tests ran (125 passed, 2
+failed). Of the 157 skipped, 82 wait on a test-tool or test-script fix
+(tracked), 44 need an operator, 31 do not apply to this device, and the
+rest wait on this example (a written Notification Class recipient list lasts
+only until the example restarts, so the test that restarts the device with a
+written list was not set up). The per-cause counts are from the 2026-10-27 run;
+only 9.8.1 moved (SKIP to PASS) and 7.3.1.11.1 (FAIL to operator SKIP) since. The 31
 that do not apply: it offers COV on Analog Input 1 only (the Analog Output
 refuses a COV subscription, so the tests that pick it skip), its Event_Enable
 and Calendar date list are not writable, its one
@@ -62,8 +63,8 @@ full backup and restore test as a whole (DM-BR-B). The event-notification and
 alarm-acknowledgement tests stop for an operator (to raise or clear the lift's
 alarm), and the rest of the acknowledgement tests cannot yet be given the
 values they compare; the "no active events" GetEventInformation test needs a
-device with no active alarm, and this example's simulated alarm cannot be
-switched off; the Schedule and Calendar tests cannot yet be given the scenario
+device with no active alarm (it passes when the example runs with
+`--no-simulated-alarms`); the Schedule and Calendar tests cannot yet be given the scenario
 data they need; the Who-Is is sent when a person presses `d`; the
 disable-initiation tests need a COV change the test tool can cause, and this
 device's COV point is an input; the restart tests stop for an operator to
@@ -125,7 +126,7 @@ DM-TS-B only, and that is what was tested.
 | 9.16.2.5 | The script skips on a fixed rule about the test tool's own stack. Tracked. |
 | 9.23.2.22 | The test tool cannot yet encode the date-range value this test writes. Tracked. |
 | 9.8.2, 9.8.3 (automated companions) | They raise an alarm on a test object this device does not have; the official 9.8.x tests cover the device's own events. Tracked. |
-| 9.8.1 Event Information with no Active Events | The test needs a device with no active alarm. This example simulates the lift's passenger alarm on a 30-second timer that cannot be switched off, so the test did not make its check. |
+| 7.3.1.11.1 Acked_Transitions | Needs an operator to trigger a transition. When the example runs with its simulated alarm on (the default), the alarm's own flips change Acked_Transitions during the run and this test FAILS; run it with `--no-simulated-alarms` (as this run did). 9.8.1 passes in that mode. |
 | 15 tests (7.2.8, 7.3.1.19.x, 7.3.1.20.x, 7.3.1.22.x, 8.4.17.10, 8.5.17.10, 7.3.2.35.x, 7.3.2.36.x) | Need an operator; the run was unattended. |
 | 8.34.2 Who-Is initiation | Needs an operator: the device sends its Who-Is when a person presses `d`. |
 | 9.27.1.2, 9.27.1.4, 9.27.2.3, 9.27.2.4 (ReinitializeDevice cold and warm start, with and without the password) | Need an operator to confirm the restart; the run was unattended. |

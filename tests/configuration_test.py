@@ -27,6 +27,7 @@ several times:
 Exit code 0 = every check passed.
 """
 import subprocess
+import time
 import sys
 from pathlib import Path
 
@@ -144,13 +145,23 @@ def main():
         # 4. The help lists the options this example reads, and no other; --xml does what it says.
         shown = subprocess.run([str(Path(args.exe).resolve()), "--help"], stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT, text=True, timeout=20).stdout
-        for option in ("--port", "--deviceID", "--deviceName", "--dcc-password", "--xml"):
+        for option in ("--port", "--deviceID", "--deviceName", "--dcc-password", "--xml", "--no-simulated-alarms"):
             record(f"--help lists {option}", option in shown, "not listed")
         controller = setup.start_controller(args, ["--xml"])
         try:
             object_name(client, args.port, DEFAULT_INSTANCE)
             record("--xml: the console shows each frame as an XML block", "<BACnetMessage" in controller.output(),
                    "no <BACnetMessage> block")
+        finally:
+            controller.stop()
+        # 5. --no-simulated-alarms: the timer never flips Passenger_Alarm, even with the test hook at 1 s.
+        controller = setup.start_controller(args, ["--no-simulated-alarms"], environment={"BAEC_TEST_PASSENGER_ALARM_SECONDS": "1"})
+        try:
+            time.sleep(4)
+            record("--no-simulated-alarms: no simulated flip in 4 s at a 1 s period",
+                   "Simulated Passenger_Alarm" not in controller.output(), "the timer still flips the alarm")
+            record("--no-simulated-alarms: the console says the timer is off",
+                   "simulated Passenger_Alarm timer is off" in controller.output(), "no FYI line")
         finally:
             controller.stop()
     finally:

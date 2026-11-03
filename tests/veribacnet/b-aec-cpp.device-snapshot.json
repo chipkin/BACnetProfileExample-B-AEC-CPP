@@ -25,7 +25,7 @@
     "vendorId": 389
   },
   "identity": {
-    "applicationSoftwareVersion": "1.2.0",
+    "applicationSoftwareVersion": "1.4.0",
     "firmwareRevision": "6.0.23.0",
     "modelName": "CAS BACnet Stack Example - B-AEC",
     "objectName": "Chipkin Example B-AEC",
@@ -627,7 +627,7 @@
           "status": "ok",
           "value": {
             "tag": "characterString",
-            "value": "1.2.0"
+            "value": "1.4.0"
           }
         },
         "backupAndRestoreState": {

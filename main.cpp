@@ -127,7 +127,8 @@
 // key B-LS claims for its own remote-discovery demo). There is no key to fire
 // the Lift's Passenger_Alarm alarm - it is simulated on a 30-second timer
 // instead (BAEC_TEST_PASSENGER_ALARM_SECONDS shortens it for the Wire Tests).
-// Command line: --port <n>, --deviceID <n>, --deviceName <text>, --dcc-password <string>, --xml.
+// Command line: --port <n>, --deviceID <n>, --deviceName <text>, --dcc-password <string>, --xml,
+// --no-simulated-alarms (turns the 30-second Passenger_Alarm timer off, for test sessions).
 //
 // All the UDP/stack plumbing lives in common/CASExampleHelper so this file can
 // stay focused on the BACnet logic.
@@ -158,7 +159,7 @@ using namespace CASBACnetStackExampleConstants;
 // 1. Example + device configuration
 // -----------------------------------------------------------------------------
 static const char* APP_NAME = "BACnet B-AEC (Advanced Elevator Controller) Example - C++";
-static const char* APP_VERSION = "1.3.0";
+static const char* APP_VERSION = "1.4.0";
 
 // The device instance. BACnet requires this to be configurable, so it defaults
 // to 389014 and can be overridden on the command line with --deviceID.
@@ -642,6 +643,9 @@ static uint8_t RECIPIENT_IP[4] = { 0, 0, 0, 0 };  // used when not broadcasting
 static const time_t PASSENGER_ALARM_SIMULATION_PERIOD_SECONDS = 30;
 static const char* const TEST_PASSENGER_ALARM_SECONDS_VARIABLE = "BAEC_TEST_PASSENGER_ALARM_SECONDS";
 static time_t g_passengerAlarmPeriodSeconds = PASSENGER_ALARM_SIMULATION_PERIOD_SECONDS;
+// --no-simulated-alarms: the timer never flips Passenger_Alarm, so it stays cleared and the device has no
+// active event (BTL 9.8.1 GetEventInformation with no active events needs that). Default: the timer runs.
+static bool g_simulatedAlarms = true;
 
 // An environment variable's value, or "" if it is not set.
 static std::string EnvironmentVariable(const char* name) {
@@ -2347,11 +2351,26 @@ int main(int argc, char** argv) {
     if (CASExampleHelper::HandleHelpAndVersionArgs(argc, argv, APP_NAME, APP_VERSION,
                                                    true,    // --dcc-password
                                                    true)) { // --deviceName
+        // The shared help text cannot list an option only this example reads.
+        for (int i = 1; i < argc; ++i) {
+            if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "/?") == 0) {
+                printf("  --no-simulated-alarms\n");
+                printf("                    Turn the simulated Passenger_Alarm timer off. The alarm\n");
+                printf("                    then stays cleared, so the device has no active event.\n");
+                printf("                    Default: the timer flips the alarm every 30 s.\n");
+                break;
+            }
+        }
         return 0;
     }
     const uint16_t port = CASExampleHelper::ParsePortArg(argc, argv, 47808);
     g_deviceInstance = CASExampleHelper::ParseDeviceIdArg(argc, argv, g_deviceInstance);
     g_deviceName = CASExampleHelper::ParseDeviceNameArg(argc, argv, DEVICE_NAME);
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "--no-simulated-alarms") == 0) {
+            g_simulatedAlarms = false;
+        }
+    }
     CASExampleHelper::ParseXmlLogArg(argc, argv); // --xml: dump every RX/TX frame as XML instead of one line (off by default)
     g_dccPassword = CASExampleHelper::ParseDccPasswordArg(argc, argv, DEFAULT_DCC_PASSWORD);
     CASExampleHelper::PrintVersion(APP_NAME, APP_VERSION);
@@ -2852,6 +2871,9 @@ int main(int argc, char** argv) {
            g_deviceInstance, g_deviceName, VENDOR_IDENTIFIER);
 
     {
+        if (!g_simulatedAlarms) {
+            printf("FYI: --no-simulated-alarms - the simulated Passenger_Alarm timer is off; the alarm stays cleared.\n");
+        }
         const std::string testAlarmSeconds = EnvironmentVariable(TEST_PASSENGER_ALARM_SECONDS_VARIABLE);
         if (!testAlarmSeconds.empty()) {
             char* parseEnd = NULL;
@@ -2886,7 +2908,7 @@ int main(int argc, char** argv) {
         // No write, no key - a controller still just reports what the
         // (simulated) elevator hardware is doing here, on its own schedule.
         time_t now = time(NULL);
-        if (now - lastAlarmToggle >= g_passengerAlarmPeriodSeconds) {
+        if (g_simulatedAlarms && now - lastAlarmToggle >= g_passengerAlarmPeriodSeconds) {
             g_liftPassengerAlarm = !g_liftPassengerAlarm;
             lastAlarmToggle = now;
             BACnetStack_UpdateValue(g_deviceInstance, OBJECT_TYPE_LIFT, LIFT_INSTANCE,

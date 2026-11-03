@@ -131,7 +131,7 @@
   "discovered": {
     "capturedAt": "2026-10-22T08:00:10.194Z",
     "readDeviceProperties": {
-      "applicationSoftwareVersion": "1.2.0",
+      "applicationSoftwareVersion": "1.4.0",
       "firmwareRevision": "6.0.23.0",
       "modelName": "CAS BACnet Stack Example - B-AEC",
       "objectName": "Chipkin Example B-AEC",
@@ -150,7 +150,7 @@
     ]
   },
   "identity": {
-    "applicationSoftwareVersion": "1.2.0",
+    "applicationSoftwareVersion": "1.4.0",
     "deviceInstance": 389014,
     "firmwareRevision": "6.0.23.0",
     "modelName": "CAS BACnet Stack Example - B-AEC",

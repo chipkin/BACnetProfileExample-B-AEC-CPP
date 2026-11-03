@@ -1,14 +1,14 @@
 # TODO - known gaps (each checked against the pinned stack source and/or the wire, not assumed)
 
-Stack pin: `69b6249f` (6.x, reports 6.0.23). Re-checked 2026-10-26
-when the pin moved from `29b83de6` (items 2 and 4 still reproduce; item 3 is
-fixed at this pin; Wire Tests).
+Stack pin: `1e7dffe2b` (6.x, reports 6.0.23). The Wire Tests passed on Windows on
+2026-11-01 at this pin; items 2 and 4 (stack #3301 and #3966, both open) are still
+reported as `[KNOWN GAP]` lines, and item 3 stays fixed.
 
 This example is **Profile-functional** (series `docs/GLOSSARY.md`) since 1.2.0:
 a landing call moves the car Simulation, and CreateObject/DeleteObject, the
 Schedule over TimeSynchronization, the Event Log over ReadRange and
 backup/restore are Wire Tests with their Failure Modes (`tests/README.md`).
-Items 2-4 below are `[KNOWN GAP]` lines in a Wire Test: reported on every run,
+Items 2 and 4 below are `[KNOWN GAP]` lines in a Wire Test: reported on every run,
 not counted as a failure, outside this example's scope.
 
 ## Stack defects found at this pin
@@ -63,10 +63,8 @@ ReadRange Log_Buffer: item count 3
 ```
 
 `BACnetDBDevice.h` (`OfferLocallyOriginatedNotificationToForwarders`) says the
-design intends Event Log to see a locally originated notification once. Whether
-the fix belongs in the stack (ignore a received notification from its own
-address) or in `common/` (drop datagrams from its own address) is for the
-coordinator to decide.
+design intends Event Log to see a locally originated notification once; the stack
+fix makes it so.
 
 ### 4. A refused landing call cannot name its error
 
@@ -135,8 +133,9 @@ WriteProperty: Elevator Group 1 (Maroon) Landing_Call_Control REFUSED - floor 11
   `tests/recipient_list_test.py` writes the Peer into it and receives the
   alarm and its return to normal on the wire.
 - The Lift's simulated `Passenger_Alarm` flips on a timer (every 30 s, or the
-  `BAEC_TEST_PASSENGER_ALARM_SECONDS` test variable) and cannot be switched off from
-  BACnet or the console, so a test that needs the car quiet has to wait for it.
-  (ref: chipkin/chipkin-bacnet-testing-tool#615)
+  `BAEC_TEST_PASSENGER_ALARM_SECONDS` test variable). Since 1.4.0 the command-line
+  option `--no-simulated-alarms` turns the timer off for a test session that needs
+  the car quiet; it still cannot be switched from BACnet or the console while the
+  example runs.
 - Notification Class 1's `Recipient_List` is writable (cl. 12.21) but is not kept across a
   restart: the seeded broadcast recipient returns.

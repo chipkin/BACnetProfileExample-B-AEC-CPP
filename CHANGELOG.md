@@ -7,7 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No changes yet._
+## [1.4.0] - 2026-11-02
+
+Built on CAS BACnet Stack 6.x (`1e7dffe2b`).
+
+### Added
+
+- **`--no-simulated-alarms`**: turns the simulated Passenger_Alarm timer off, so the
+  alarm stays cleared and the device has no active event. Without it the 30-second
+  timer keeps one active half the time, and a test that needs GetEventInformation to
+  return an empty list (BTL 9.8.1) can never run unattended. The default is unchanged.
+
+### Changed
+
+- **CAS BACnet Stack moved to 6.x `1e7dffe2b`.**
+- **Vendored `common/` updated to 3.6.1** (see `common/CHANGELOG.md`). At this
+  stack revision the example chooses the address of a broadcast the stack sends
+  without a destination address, such as the I-Am that answers a Who-Is. Such a
+  broadcast now also goes, as a unicast, to the last peer that sent from a UDP
+  port other than the example's own, so a client on the same computer but on
+  another port hears the answer. Only frames the stack addresses itself are
+  copied (network layer messages, I-Am and I-Have); event notifications, such as
+  the Lift's alarms broadcast to Notification Class 1's seeded recipient, are not.
+- **README**: the profile example table is the same in every example (each
+  blocked example names its open stack issue).
+
+### Fixed
+
+- **VeriBACnet project files** (`tests/veribacnet/`) declared
+  Application_Software_Version 1.2.0 while the device reported 1.3.0, so BTL test
+  7.1.1 failed against the EPICS. They now declare the device's version. The
+  EPICS no longer gives fixed values for Analog Output 1's `Present_Value` and
+  `Priority_Array` slot 8, which the Schedule writes, and the start command in
+  `tests/veribacnet/README.md` carries the declared test password and
+  `--no-simulated-alarms`. Project files only; no device change.
 
 ## [1.3.0] - 2026-10-27
 
